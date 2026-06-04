@@ -1,62 +1,81 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { TOKEN_KEY } from "@/api/http";
-import type { AuthUser, UserRole } from "@/types/auth";
-
-function parsePlaceholderRole(storedToken: string | null): UserRole | null {
-  if (!storedToken?.startsWith("placeholder-")) {
-    return null;
-  }
-  const parsed = storedToken.replace("placeholder-", "").toUpperCase();
-  if (parsed === "CHATTER" || parsed === "TEAMLEAD" || parsed === "ADMIN") {
-    return parsed;
-  }
-  return null;
-}
-
-function createPlaceholderUser(selectedRole: UserRole): AuthUser {
-  return {
-    id: 1,
-    username: selectedRole === "CHATTER" ? "chatter_demo" : "teamlead_demo",
-    email: `${selectedRole.toLowerCase()}@example.com`,
-    role: selectedRole,
-  };
-}
-
-const initialToken = localStorage.getItem(TOKEN_KEY);
-const initialRole = parsePlaceholderRole(initialToken);
+import { AUTH_TOKEN, ME } from "@/api/endpoints";
+import { ACCESS_TOKEN_KEY, http, REFRESH_TOKEN_KEY } from "@/api/http";
+import type { AuthUser, TokenResponse, UserRole } from "@/types/auth";
 
 export const useAuthStore = defineStore("auth", () => {
-  const token = ref<string | null>(initialToken);
-  const user = ref<AuthUser | null>(
-    initialRole ? createPlaceholderUser(initialRole) : null,
-  );
-  const role = ref<UserRole | null>(initialRole);
+  const accessToken = ref<string | null>(localStorage.getItem(ACCESS_TOKEN_KEY));
+  const refreshToken = ref<string | null>(localStorage.getItem(REFRESH_TOKEN_KEY));
+  const user = ref<AuthUser | null>(null);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
 
-  const isAuthenticated = computed(() => Boolean(token.value));
+  const isAuthenticated = computed(() => Boolean(accessToken.value));
+  const role = computed<UserRole | null>(() => user.value?.role ?? null);
 
-  function loginPlaceholder(selectedRole: UserRole): void {
-    const placeholderToken = `placeholder-${selectedRole.toLowerCase()}`;
-    token.value = placeholderToken;
-    role.value = selectedRole;
-    user.value = createPlaceholderUser(selectedRole);
-    localStorage.setItem(TOKEN_KEY, placeholderToken);
+  async function loadMe(): Promise<void> {
+    const { data } = await http.get<AuthUser>(ME);
+    user.value = data;
+  }
+
+  async function login(username: string, password: string): Promise<void> {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const { data } = await http.post<TokenResponse>(AUTH_TOKEN, {
+        username,
+        password,
+      });
+      accessToken.value = data.access;
+      refreshToken.value = data.refresh;
+      localStorage.setItem(ACCESS_TOKEN_KEY, data.access);
+      localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh);
+      await loadMe();
+    } catch {
+      error.value = "Invalid username or password";
+      throw new Error(error.value);
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   function logout(): void {
-    token.value = null;
+    accessToken.value = null;
+    refreshToken.value = null;
     user.value = null;
-    role.value = null;
-    localStorage.removeItem(TOKEN_KEY);
+    error.value = null;
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+
+  async function restoreSession(): Promise<void> {
+    accessToken.value = localStorage.getItem(ACCESS_TOKEN_KEY);
+    refreshToken.value = localStorage.getItem(REFRESH_TOKEN_KEY);
+
+    if (!accessToken.value) {
+      return;
+    }
+
+    try {
+      await loadMe();
+    } catch {
+      logout();
+    }
   }
 
   return {
-    token,
+    accessToken,
+    refreshToken,
     user,
-    role,
+    isLoading,
+    error,
     isAuthenticated,
-    loginPlaceholder,
+    role,
+    login,
+    loadMe,
     logout,
+    restoreSession,
   };
 });

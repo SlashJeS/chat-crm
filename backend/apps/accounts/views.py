@@ -1,6 +1,9 @@
+from django.contrib.auth.models import User
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.accounts.serializers import MeSerializer
 
 
 class HealthView(APIView):
@@ -14,12 +17,6 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-        return Response(
-            {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "role": None,
-            }
-        )
+        user = User.objects.select_related("profile").get(pk=request.user.pk)
+        serializer = MeSerializer(user)
+        return Response(serializer.data)

@@ -4,5 +4,11 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string;
-  role: UserRole | null;
+  role: UserRole;
+  display_name: string;
+}
+
+export interface TokenResponse {
+  access: string;
+  refresh: string;
 }

@@ -1,9 +1,13 @@
+export const AUTH_TOKEN = "/auth/token/";
+export const AUTH_REFRESH = "/auth/token/refresh/";
+export const ME = "/me/";
+
 export const endpoints = {
   health: "/health/",
-  me: "/me/",
+  me: ME,
   auth: {
-    token: "/auth/token/",
-    refresh: "/auth/token/refresh/",
+    token: AUTH_TOKEN,
+    refresh: AUTH_REFRESH,
   },
   conversations: "/conversations/",
   messages: (conversationId: number) => `/conversations/${conversationId}/messages/`,
