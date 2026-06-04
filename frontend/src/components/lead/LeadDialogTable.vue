@@ -20,10 +20,6 @@ function assignLabel(conversation: LeadConversation): string {
   return conversation.status === "ACTIVE" ? "Reassign" : "Assign";
 }
 
-function previewText(conversation: LeadConversation): string {
-  return conversation.last_message?.text ?? "No messages yet";
-}
-
 function slaWaitingText(conversation: LeadConversation): string | null {
   if (!conversation.waiting_since) {
     return null;
@@ -49,7 +45,6 @@ function slaWaitingText(conversation: LeadConversation): string | null {
           <col class="lead-table__col-fan" />
           <col class="lead-table__col-model" />
           <col class="lead-table__col-assigned" />
-          <col class="lead-table__col-message" />
           <col class="lead-table__col-sla" />
           <col class="lead-table__col-updated" />
           <col class="lead-table__col-action" />
@@ -59,7 +54,6 @@ function slaWaitingText(conversation: LeadConversation): string | null {
             <th scope="col">Fan</th>
             <th scope="col">Model</th>
             <th scope="col">Assigned to</th>
-            <th scope="col">Last message</th>
             <th scope="col">SLA</th>
             <th scope="col">Updated</th>
             <th scope="col">Action</th>
@@ -92,9 +86,6 @@ function slaWaitingText(conversation: LeadConversation): string | null {
             </td>
             <td data-label="Assigned to">
               <span class="lead-table__cell-text">{{ conversation.assigned_chatter.display_name }}</span>
-            </td>
-            <td data-label="Last message">
-              <span class="lead-table__preview">{{ previewText(conversation) }}</span>
             </td>
             <td data-label="SLA">
               <div v-if="conversation.is_overdue" class="lead-table__sla">
@@ -148,7 +139,7 @@ function slaWaitingText(conversation: LeadConversation): string | null {
 
 .lead-table__table {
   width: 100%;
-  min-width: 980px;
+  min-width: 720px;
   table-layout: fixed;
   border-collapse: collapse;
 }
@@ -163,10 +154,6 @@ function slaWaitingText(conversation: LeadConversation): string | null {
 
 .lead-table__col-assigned {
   width: 140px;
-}
-
-.lead-table__col-message {
-  width: 260px;
 }
 
 .lead-table__col-sla {
@@ -253,15 +240,6 @@ function slaWaitingText(conversation: LeadConversation): string | null {
   text-overflow: ellipsis;
 }
 
-.lead-table__preview {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
-}
-
 .lead-table__sla {
   display: flex;
   flex-direction: column;
@@ -326,11 +304,6 @@ function slaWaitingText(conversation: LeadConversation): string | null {
     letter-spacing: 0.03em;
     color: var(--color-text-soft);
     flex-shrink: 0;
-  }
-
-  .lead-table__preview {
-    max-width: 12rem;
-    text-align: right;
   }
 
   .lead-table__action-cell {
