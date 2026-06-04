@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.db.models import Prefetch
+from django.db.models import Case, F, Prefetch, Q, Value, When
 from django.http import Http404
 from django.utils import timezone
 
@@ -72,3 +72,59 @@ def is_conversation_overdue(conversation, now=None):
         return False
     now = now or timezone.now()
     return conversation.waiting_since < now - timedelta(seconds=settings.RESPONSE_SLA_SECONDS)
+
+
+def get_lead_conversations_queryset():
+    return (
+        Conversation.objects.all()
+        .select_related(
+            "fan",
+            "model_account",
+            "assigned_chatter",
+            "assigned_chatter__profile",
+            "last_message",
+            "last_message__sender_user",
+            "last_message__sender_user__profile",
+        )
+        .prefetch_related("read_states")
+        .order_by(
+            Case(
+                When(status=Conversation.Status.ACTIVE, then=Value(0)),
+                default=Value(1),
+            ),
+            F("last_message_at").desc(nulls_last=True),
+            "-updated_at",
+        )
+    )
+
+
+def filter_lead_conversations_queryset(
+    queryset,
+    *,
+    status=None,
+    assigned_chatter_id=None,
+    model_account_id=None,
+    search=None,
+):
+    if status is not None:
+        queryset = queryset.filter(status=status)
+
+    if assigned_chatter_id is not None:
+        queryset = queryset.filter(assigned_chatter_id=assigned_chatter_id)
+
+    if model_account_id is not None:
+        queryset = queryset.filter(model_account_id=model_account_id)
+
+    if search:
+        queryset = queryset.filter(
+            Q(fan__display_name__icontains=search) | Q(fan__external_id__icontains=search)
+        )
+
+    return queryset
+
+
+def get_lead_conversation(conversation_id):
+    try:
+        return get_lead_conversations_queryset().get(pk=conversation_id)
+    except Conversation.DoesNotExist as exc:
+        raise Http404 from exc

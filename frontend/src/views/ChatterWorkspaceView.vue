@@ -5,13 +5,11 @@ import ChatWindow from "@/components/chat/ChatWindow.vue";
 import DialogList from "@/components/chat/DialogList.vue";
 import AppLayout from "@/components/common/AppLayout.vue";
 import { useChatSocket } from "@/composables/useChatSocket";
-import { useAuthStore } from "@/stores/auth.store";
 import { useConversationsStore } from "@/stores/conversations.store";
 import { useMessagesStore } from "@/stores/messages.store";
 import type { SendMessagePayload } from "@/types/messages";
 import { getConnectionTone, getRealtimeConnectionLabel } from "@/utils/status";
 
-const auth = useAuthStore();
 const conversationsStore = useConversationsStore();
 const messagesStore = useMessagesStore();
 const chatSocket = useChatSocket();
@@ -79,7 +77,6 @@ async function handleRetryConversations(): Promise<void> {
 }
 
 onMounted(async () => {
-  await auth.restoreSession();
   await conversationsStore.loadConversations();
   chatSocket.connect();
 });

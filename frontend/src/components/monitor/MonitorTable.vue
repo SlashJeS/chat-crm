@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import AppIcon from "@/components/common/AppIcon.vue";
 import MonitorRow from "@/components/monitor/MonitorRow.vue";
 import type { MonitorChatter } from "@/types/monitor";
 
@@ -38,10 +39,7 @@ const totalChatters = computed(() => props.chatters.length);
 
     <div v-if="!chatters.length" class="monitor-table__empty empty-state">
       <div class="empty-state__icon" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="24" cy="16" r="8" stroke="currentColor" stroke-width="2" />
-          <path d="M8 40 C8 32 15 26 24 26 C33 26 40 32 40 40" stroke="currentColor" stroke-width="2" />
-        </svg>
+        <AppIcon name="users-empty" size="xl" />
       </div>
       <p class="empty-state__title">No chatters available</p>
       <span class="empty-state__text">Chatters will appear here once they are assigned and active.</span>

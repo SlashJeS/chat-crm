@@ -2,7 +2,11 @@
 import { computed } from "vue";
 import { RouterView, useRoute } from "vue-router";
 
+import LoadingState from "@/components/common/LoadingState.vue";
+import { useAuthStore } from "@/stores/auth.store";
+
 const route = useRoute();
+const auth = useAuthStore();
 
 const transitionName = computed(() => {
   if (route.path === "/login") {
@@ -12,11 +16,21 @@ const transitionName = computed(() => {
 });
 
 const isFullHeightPage = computed(() => route.path === "/chatter");
+
+const showSessionRestore = computed(
+  () => auth.isRestoringSession && route.meta.requiresAuth,
+);
 </script>
 
 <template>
   <div class="app-root" :class="{ 'app-root--full-height': isFullHeightPage }">
-    <RouterView v-slot="{ Component }">
+    <LoadingState
+      v-if="showSessionRestore"
+      class="app-root__restore"
+      message="Restoring session…"
+      size="md"
+    />
+    <RouterView v-else v-slot="{ Component }">
       <Transition :name="transitionName" mode="out-in">
         <component :is="Component" :key="route.path" />
       </Transition>
@@ -33,6 +47,12 @@ const isFullHeightPage = computed(() => route.path === "/chatter");
 
 .app-root--full-height {
   min-height: 100vh;
+}
+
+.app-root__restore {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
 }
 
 @media (min-width: 901px) {

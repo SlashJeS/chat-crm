@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
+from apps.accounts.models import UserProfile
 from apps.conversations.models import Conversation, ConversationReadState, Fan, Message
 from apps.model_accounts.models import ModelAccount
 
@@ -95,3 +96,52 @@ class ConversationListSerializer(serializers.ModelSerializer):
 class ConversationDetailSerializer(ConversationListSerializer):
     class Meta(ConversationListSerializer.Meta):
         fields = ConversationListSerializer.Meta.fields + ["created_at", "updated_at"]
+
+
+class LeadConversationSerializer(ConversationListSerializer):
+    unread_count_for_assigned_chatter = serializers.SerializerMethodField()
+
+    class Meta(ConversationListSerializer.Meta):
+        fields = ConversationListSerializer.Meta.fields + [
+            "created_at",
+            "updated_at",
+            "unread_count_for_assigned_chatter",
+        ]
+
+    def get_unread_count_for_assigned_chatter(self, obj):
+        if not obj.assigned_chatter_id:
+            return 0
+        for read_state in obj.read_states.all():
+            if read_state.user_id == obj.assigned_chatter_id:
+                return read_state.unread_count
+        read_state = obj.read_states.filter(user_id=obj.assigned_chatter_id).first()
+        return read_state.unread_count if read_state else 0
+
+
+class AssignConversationSerializer(serializers.Serializer):
+    chatter_id = serializers.IntegerField()
+
+    def validate_chatter_id(self, value):
+        try:
+            chatter = User.objects.select_related("profile").get(pk=value)
+        except User.DoesNotExist as exc:
+            raise serializers.ValidationError("User not found.") from exc
+
+        profile = getattr(chatter, "profile", None)
+        if profile is None or profile.role != UserProfile.Role.CHATTER:
+            raise serializers.ValidationError("User must have the CHATTER role.")
+
+        self.context["chatter"] = chatter
+        return value
+
+    def validate(self, attrs):
+        conversation = self.context.get("conversation")
+        if conversation is None:
+            return attrs
+
+        if conversation.status != Conversation.Status.ACTIVE:
+            raise serializers.ValidationError(
+                {"detail": "Only ACTIVE conversations can be assigned."}
+            )
+
+        return attrs

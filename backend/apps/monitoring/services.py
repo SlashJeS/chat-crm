@@ -53,3 +53,20 @@ def get_serialized_monitor_snapshot():
     snapshot = build_monitor_snapshot()
     snapshot["chatters"] = MonitorChatterSerializer(snapshot["chatters"], many=True).data
     return snapshot
+
+
+def build_chatter_workload_list():
+    snapshot = build_monitor_snapshot()
+    return [
+        {
+            "id": chatter["id"],
+            "username": chatter["username"],
+            "display_name": chatter["display_name"],
+            "is_online": chatter["is_online"],
+            "active_conversations_count": chatter["active_conversations_count"],
+            "waiting_conversations_count": chatter["waiting_conversations_count"],
+            "overdue_conversations_count": chatter["overdue_conversations_count"],
+            "last_seen_at": chatter["last_seen_at"],
+        }
+        for chatter in snapshot["chatters"]
+    ]

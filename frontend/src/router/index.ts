@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 
-import { ACCESS_TOKEN_KEY } from "@/api/http";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/api/http";
 import { useAuthStore } from "@/stores/auth.store";
 import type { UserRole } from "@/types/auth";
 import ChatterWorkspaceView from "@/views/ChatterWorkspaceView.vue";
+import LeadDialogsView from "@/views/LeadDialogsView.vue";
 import LoginView from "@/views/LoginView.vue";
 import TeamleadMonitorView from "@/views/TeamleadMonitorView.vue";
 
@@ -15,6 +16,10 @@ function roleHomePath(role: UserRole | null): string {
     return "/chatter";
   }
   return "/login";
+}
+
+function hasStoredTokens(): boolean {
+  return Boolean(localStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem(REFRESH_TOKEN_KEY));
 }
 
 const router = createRouter({
@@ -42,22 +47,40 @@ const router = createRouter({
       component: TeamleadMonitorView,
       meta: { requiresAuth: true, roles: ["TEAMLEAD", "ADMIN"] as UserRole[] },
     },
+    {
+      path: "/lead/dialogs",
+      name: "lead-dialogs",
+      component: LeadDialogsView,
+      meta: { requiresAuth: true, roles: ["TEAMLEAD", "ADMIN"] as UserRole[] },
+    },
   ],
 });
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
+  const needsAuth = Boolean(to.meta.requiresAuth);
+  const isGuestRoute = Boolean(to.meta.guest);
+  const shouldRestore =
+    !auth.user &&
+    (!auth.hasTriedRestore || hasStoredTokens()) &&
+    (needsAuth || (isGuestRoute && hasStoredTokens()));
 
-  if (localStorage.getItem(ACCESS_TOKEN_KEY) && !auth.user) {
+  if (shouldRestore) {
     await auth.restoreSession();
   }
 
-  if (to.meta.guest && auth.isAuthenticated && auth.user) {
+  if (isGuestRoute && auth.isAuthenticated) {
     return roleHomePath(auth.role);
   }
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return "/login";
+  if (needsAuth && !auth.isAuthenticated) {
+    if (to.path === "/login") {
+      return true;
+    }
+    return {
+      path: "/login",
+      query: { redirect: to.fullPath },
+    };
   }
 
   const allowedRoles = to.meta.roles as UserRole[] | undefined;
@@ -67,5 +90,20 @@ router.beforeEach(async (to) => {
 
   return true;
 });
+
+export function isPathAllowedForRole(path: string, role: UserRole): boolean {
+  const resolved = router.resolve(path);
+  if (resolved.meta.guest) {
+    return false;
+  }
+  if (!resolved.meta.requiresAuth) {
+    return true;
+  }
+  const roles = resolved.meta.roles as UserRole[] | undefined;
+  if (!roles?.length) {
+    return true;
+  }
+  return roles.includes(role);
+}
 
 export default router;

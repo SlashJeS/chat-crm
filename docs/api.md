@@ -151,6 +151,104 @@ Monitor snapshot for teamleads and admins.
 }
 ```
 
+## Lead operations
+
+Lead endpoints for managing fan dialog assignments. Access: **TEAMLEAD** or **ADMIN** only.
+
+### GET /api/lead/conversations/
+
+List all fan dialogs with assignment and status metadata.
+
+**Headers:** `Authorization: Bearer <access-token>`
+
+**Query params:**
+
+| Param | Description |
+|-------|-------------|
+| `status` | Optional: `ACTIVE` or `CLOSED` |
+| `assigned_chatter_id` | Filter by assigned chatter user id |
+| `model_account_id` | Filter by model account id |
+| `search` | Search fan `display_name` or `external_id` |
+| `limit` | Default 50, max 100 |
+| `offset` | Default 0 |
+
+**Response:**
+
+```json
+{
+  "count": 8,
+  "results": [
+    {
+      "id": 1,
+      "fan": {"id": 1, "external_id": "fan_001", "display_name": "Fan Alex", "avatar_url": ""},
+      "model_account": {"id": 1, "name": "Model Aurora", "avatar_url": ""},
+      "assigned_chatter": {"id": 2, "username": "chatter1", "display_name": "Chatter One"},
+      "status": "ACTIVE",
+      "last_message": null,
+      "last_message_at": "2026-01-01T12:00:00Z",
+      "unread_count": 0,
+      "waiting_since": null,
+      "last_fan_message_at": null,
+      "last_chatter_message_at": null,
+      "is_overdue": false,
+      "created_at": "2026-01-01T10:00:00Z",
+      "updated_at": "2026-01-01T12:00:00Z",
+      "unread_count_for_assigned_chatter": 0
+    }
+  ]
+}
+```
+
+### GET /api/lead/conversations/{id}/
+
+Lead dialog detail. Same shape as list items.
+
+### POST /api/lead/conversations/{id}/assign/
+
+Assign or reassign an active conversation to a chatter.
+
+**Request body:**
+
+```json
+{
+  "chatter_id": 3
+}
+```
+
+**Validation:**
+
+- `chatter_id` must exist and belong to a user with role `CHATTER`
+- Conversation must be `ACTIVE`
+
+**Response:** Updated lead conversation object.
+
+Realtime: publishes `conversation.updated` to old and new chatter groups and refreshes the monitor snapshot after commit.
+
+### GET /api/lead/chatters/workload/
+
+Chatter workload summary for assignment decisions.
+
+**Headers:** `Authorization: Bearer <access-token>`
+
+**Response:**
+
+```json
+{
+  "results": [
+    {
+      "id": 2,
+      "username": "chatter1",
+      "display_name": "Chatter One",
+      "is_online": false,
+      "active_conversations_count": 3,
+      "waiting_conversations_count": 2,
+      "overdue_conversations_count": 2,
+      "last_seen_at": null
+    }
+  ]
+}
+```
+
 ## Dev fan message simulation
 
 ### POST /api/dev/simulate-fan-message/

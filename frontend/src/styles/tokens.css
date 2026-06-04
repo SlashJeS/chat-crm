@@ -48,7 +48,10 @@
   --space-8: 2rem;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --header-height: 4rem;
+  --sidebar-width: 15rem;
+  --sidebar-width-collapsed: 4.5rem;
+  --topbar-height: 3.75rem;
+  --header-height: var(--topbar-height);
 
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;

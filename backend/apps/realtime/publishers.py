@@ -94,6 +94,7 @@ def publish_message_created(message_id):
 
 
 def publish_conversation_updated(conversation_id, user_id=None):
+    target_user_id = user_id
     conversation = (
         Conversation.objects.select_related(
             "fan",
@@ -114,40 +115,53 @@ def publish_conversation_updated(conversation_id, user_id=None):
     if channel_layer is None:
         return
 
-    user = None
-    if user_id is not None:
-        user = User.objects.filter(pk=user_id).first()
-    else:
-        user = conversation.assigned_chatter
+    if target_user_id is None:
+        target_user_id = conversation.assigned_chatter_id
 
-    if user is not None:
-        conversation = (
-            Conversation.objects.filter(pk=conversation_id)
-            .select_related(
-                "fan",
-                "model_account",
-                "assigned_chatter",
-                "assigned_chatter__profile",
-                "last_message",
-                "last_message__sender_user",
-                "last_message__sender_user__profile",
-            )
-            .prefetch_related(
-                Prefetch(
-                    "read_states",
-                    queryset=ConversationReadState.objects.filter(user=user),
-                    to_attr="current_user_read_states",
-                )
-            )
-            .first()
+    if target_user_id is None:
+        return
+
+    publish_conversation_updated_for_user(conversation_id, target_user_id)
+
+
+def publish_conversation_updated_for_user(conversation_id, user_id):
+    user = User.objects.filter(pk=user_id).first()
+    if user is None:
+        return
+
+    conversation = (
+        Conversation.objects.filter(pk=conversation_id)
+        .select_related(
+            "fan",
+            "model_account",
+            "assigned_chatter",
+            "assigned_chatter__profile",
+            "last_message",
+            "last_message__sender_user",
+            "last_message__sender_user__profile",
         )
+        .prefetch_related(
+            Prefetch(
+                "read_states",
+                queryset=ConversationReadState.objects.filter(user=user),
+                to_attr="current_user_read_states",
+            )
+        )
+        .first()
+    )
+    if conversation is None:
+        return
+
+    channel_layer = _get_channel_layer()
+    if channel_layer is None:
+        return
 
     payload = {
         "type": ServerEvents.CONVERSATION_UPDATED,
         "conversation": _serialize_conversation(conversation, user=user),
     }
     async_to_sync(channel_layer.group_send)(
-        get_chatter_group_name(conversation.assigned_chatter_id),
+        get_chatter_group_name(user_id),
         {
             "type": ChannelEvents.CONVERSATION_UPDATED,
             "payload": payload,

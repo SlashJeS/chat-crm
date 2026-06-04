@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
+import AppIcon from "@/components/common/AppIcon.vue";
+import AppLayout from "@/components/common/AppLayout.vue";
 import ErrorState from "@/components/common/ErrorState.vue";
 import LoadingState from "@/components/common/LoadingState.vue";
 import MonitorTable from "@/components/monitor/MonitorTable.vue";
-import AppLayout from "@/components/common/AppLayout.vue";
 import { useMonitorSocket } from "@/composables/useMonitorSocket";
 import { useMonitorStore } from "@/stores/monitor.store";
 import { formatDateTime } from "@/utils/date";
@@ -134,11 +135,8 @@ onUnmounted(() => {
 
         <section class="monitor-page__cards" aria-label="Summary metrics">
           <article class="kpi-card kpi-card--success">
-            <div class="kpi-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" />
-                <path d="M4 20 C4 16 7.5 13 12 13 C16.5 13 20 16 20 20" stroke="currentColor" stroke-width="2" />
-              </svg>
+            <div class="kpi-card__icon">
+              <AppIcon name="user" size="lg" />
             </div>
             <div class="kpi-card__body">
               <span class="kpi-card__label">Online chatters</span>
@@ -148,11 +146,8 @@ onUnmounted(() => {
           </article>
 
           <article class="kpi-card kpi-card--primary">
-            <div class="kpi-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="2" />
-                <path d="M8 19 L12 15 L8 15 Z" fill="currentColor" opacity="0.35" />
-              </svg>
+            <div class="kpi-card__icon">
+              <AppIcon name="chat-bubble" size="lg" />
             </div>
             <div class="kpi-card__body">
               <span class="kpi-card__label">Active dialogs</span>
@@ -162,11 +157,8 @@ onUnmounted(() => {
           </article>
 
           <article class="kpi-card kpi-card--warning">
-            <div class="kpi-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
-                <path d="M12 7 V12 L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
+            <div class="kpi-card__icon">
+              <AppIcon name="clock" size="lg" />
             </div>
             <div class="kpi-card__body">
               <span class="kpi-card__label">Fans waiting</span>
@@ -176,12 +168,8 @@ onUnmounted(() => {
           </article>
 
           <article class="kpi-card" :class="{ 'kpi-card--danger': hasOverdue }">
-            <div class="kpi-card__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 3 L22 20 H2 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-                <path d="M12 9 V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <circle cx="12" cy="17" r="1" fill="currentColor" />
-              </svg>
+            <div class="kpi-card__icon">
+              <AppIcon name="warning" size="lg" />
             </div>
             <div class="kpi-card__body">
               <span class="kpi-card__label">Overdue fans</span>
@@ -196,10 +184,7 @@ onUnmounted(() => {
 
       <div v-else class="monitor-page__empty panel empty-state">
         <div class="empty-state__icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="10" width="36" height="28" rx="6" stroke="currentColor" stroke-width="2" />
-            <path d="M14 22 H34 M14 28 H26" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
+        <AppIcon name="dashboard-empty" size="xl" />
         </div>
         <p class="empty-state__title">No monitor data available</p>
         <button type="button" class="btn btn-secondary" @click="handleRetryLoad">Load snapshot</button>

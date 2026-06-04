@@ -31,9 +31,10 @@ Toggle light/dark from the app header or login page. If no preference is saved, 
 | Surface | Description |
 |---------|-------------|
 | Login | Split hero + sign-in panel with demo accounts |
-| App shell | Sticky header, role nav, theme toggle, user menu |
+| App shell | Collapsible sidebar (nav + theme), top bar (page title + user menu) |
 | Chatter Workspace | Two-column inbox: dialog list + chat panel |
 | Teamlead Monitor | KPI cards, SLA config, chatter workload table |
+| Lead Dialogs | Dialog list with filters, assignment panel, chatter workload |
 
 All surfaces use shared tokens and utilities, support dark/light themes, and are responsive from mobile to desktop widths.
 
@@ -45,6 +46,7 @@ All surfaces use shared tokens and utilities, support dark/light themes, and are
 | `/login` | LoginView | Public (guest) |
 | `/chatter` | ChatterWorkspaceView | CHATTER |
 | `/teamlead` | TeamleadMonitorView | TEAMLEAD, ADMIN |
+| `/lead/dialogs` | LeadDialogsView | TEAMLEAD, ADMIN |
 
 ## Authentication
 
@@ -107,6 +109,25 @@ ws://localhost:8000/ws/monitor/?token=<access_token>
 Client events: `monitor.refresh`
 
 Server events: `monitor.snapshot`, `error`
+
+## Lead dialogs
+
+The `/lead/dialogs` route provides assignment management for teamleads and admins:
+
+- List all fan dialogs with filters (search, status, assigned chatter)
+- Summary cards for total dialogs, waiting, overdue, and online chatters
+- Select a dialog to view details in the assignment panel
+- Compare chatter workload before assigning
+- Assign or reassign dialogs to any chatter
+
+Refresh reloads both the dialog list and workload data. Assignment updates the local row and reloads workload counts.
+
+### REST endpoints used
+
+- `GET /api/lead/conversations/`
+- `GET /api/lead/conversations/{id}/`
+- `POST /api/lead/conversations/{id}/assign/`
+- `GET /api/lead/chatters/workload/`
 
 ## Reconnect and resync behavior
 

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import AppLogo from "@/components/common/AppLogo.vue";
 import LoadingState from "@/components/common/LoadingState.vue";
 import ThemeToggle from "@/components/common/ThemeToggle.vue";
+import { isPathAllowedForRole } from "@/router/index";
 import { useAuthStore } from "@/stores/auth.store";
 import type { UserRole } from "@/types/auth";
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 
 const username = ref("");
@@ -27,20 +29,28 @@ const demoAccounts = [
   { label: "Chatter Three", username: "chatter3", password: "password123", role: "CHATTER" as UserRole },
 ];
 
-function redirectForRole(role: UserRole): void {
-  if (role === "CHATTER") {
-    router.push("/chatter");
+function redirectAfterLogin(role: UserRole): void {
+  const redirect =
+    typeof route.query.redirect === "string" && route.query.redirect.startsWith("/")
+      ? route.query.redirect
+      : null;
+
+  if (redirect && isPathAllowedForRole(redirect, role)) {
+    router.replace(redirect);
     return;
   }
-  router.push("/teamlead");
+
+  if (role === "CHATTER") {
+    router.replace("/chatter");
+    return;
+  }
+  router.replace("/teamlead");
 }
 
 async function handleSubmit(): Promise<void> {
   try {
-    await auth.login(username.value, password.value);
-    if (auth.user) {
-      redirectForRole(auth.user.role);
-    }
+    const loadedUser = await auth.login(username.value, password.value);
+    redirectAfterLogin(loadedUser.role);
   } catch {
     // error stored in auth.error
   }

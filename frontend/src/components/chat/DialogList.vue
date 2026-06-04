@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from "@/components/common/AppIcon.vue";
 import DialogListItem from "@/components/chat/DialogListItem.vue";
 import ErrorState from "@/components/common/ErrorState.vue";
 import type { Conversation } from "@/types/conversations";
@@ -47,10 +48,7 @@ const emit = defineEmits<{
 
       <div v-else-if="!conversations.length" class="dialog-list__empty empty-state">
         <div class="empty-state__icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="8" y="12" width="32" height="22" rx="8" stroke="currentColor" stroke-width="2" />
-            <path d="M16 34 L24 40 L24 34 Z" fill="currentColor" opacity="0.35" />
-          </svg>
+        <AppIcon name="inbox-empty" size="xl" />
         </div>
         <p class="empty-state__title">No active dialogs</p>
         <span class="empty-state__text">Your inbox will populate when fans are assigned to you.</span>

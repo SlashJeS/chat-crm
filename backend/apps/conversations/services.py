@@ -4,8 +4,10 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from apps.conversations.models import ConversationReadState, Message, ResponseTimer
+from apps.accounts.models import UserProfile
+from apps.conversations.models import Conversation, ConversationReadState, Message, ResponseTimer
 from apps.realtime.publishers import (
+    publish_conversation_updated_for_user,
     publish_conversation_updated,
     publish_message_created,
     publish_monitor_snapshot,
@@ -196,3 +198,41 @@ def create_chatter_message(
 
     _schedule_chatter_message_events(message.id, conversation.id, user.id, read_state.id)
     return message, True
+
+
+def _schedule_assignment_events(conversation_id, old_chatter_id, new_chatter_id):
+    def publish():
+        if old_chatter_id is not None:
+            publish_conversation_updated_for_user(conversation_id, old_chatter_id)
+        publish_conversation_updated_for_user(conversation_id, new_chatter_id)
+        publish_monitor_snapshot()
+
+    transaction.on_commit(publish)
+
+
+@transaction.atomic
+def assign_conversation_to_chatter(*, conversation, chatter, assigned_by):
+    if chatter.profile.role != UserProfile.Role.CHATTER:
+        raise ValidationError({"chatter_id": "Target user must have the CHATTER role."})
+
+    if conversation.status != Conversation.Status.ACTIVE:
+        raise ValidationError({"detail": "Only ACTIVE conversations can be assigned."})
+
+    conversation = Conversation.objects.select_for_update().get(pk=conversation.pk)
+
+    if conversation.assigned_chatter_id == chatter.id:
+        return conversation
+
+    old_chatter_id = conversation.assigned_chatter_id
+    conversation.assigned_chatter = chatter
+    conversation.save(update_fields=["assigned_chatter", "updated_at"])
+
+    unread_count = 1 if conversation.waiting_since is not None else 0
+    ConversationReadState.objects.get_or_create(
+        conversation=conversation,
+        user=chatter,
+        defaults={"unread_count": unread_count},
+    )
+
+    _schedule_assignment_events(conversation.id, old_chatter_id, chatter.id)
+    return conversation

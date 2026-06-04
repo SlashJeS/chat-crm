@@ -74,6 +74,15 @@ backend/.venv/Scripts/pip install requests websocket-client   # Windows
 backend/.venv/Scripts/python scripts/integration_smoke_test.py
 ```
 
+Lead operations API smoke test (local backend, no running server required):
+
+```bash
+cd backend
+python scripts/lead_api_smoke_test.py
+```
+
+Covers lead conversation list/filter, workload, assignment, and chatter access control.
+
 ## Test accounts
 
 See [Demo data](#demo-data) below.
