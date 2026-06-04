@@ -488,11 +488,9 @@ cp .env.production.example .env
 
 docker compose -f docker-compose.prod.yml up --build -d
 
-docker compose -f docker-compose.prod.yml exec backend python manage.py seed_demo
-
 ```
 
-
+Backend entrypoint runs migrate, collectstatic, and auto-seed on first start.
 
 | Container | Host port |
 
@@ -515,8 +513,6 @@ Configure host nginx: `/` → `:3000`, `/api/` `/ws/` `/admin/` `/static/` → `
 - Copy and edit `.env` from `.env.production.example`
 
 - `docker compose -f docker-compose.prod.yml up --build -d`
-
-- Seed: `docker compose -f docker-compose.prod.yml exec backend python manage.py seed_demo`
 
 - Configure host nginx to proxy to ports 3000 and 8000
 

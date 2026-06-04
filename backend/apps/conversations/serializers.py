@@ -130,6 +130,8 @@ class AssignConversationSerializer(serializers.Serializer):
         profile = getattr(chatter, "profile", None)
         if profile is None or profile.role != UserProfile.Role.CHATTER:
             raise serializers.ValidationError("User must have the CHATTER role.")
+        if not chatter.is_active:
+            raise serializers.ValidationError("User must be active.")
 
         self.context["chatter"] = chatter
         return value

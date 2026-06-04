@@ -214,6 +214,8 @@ def _schedule_assignment_events(conversation_id, old_chatter_id, new_chatter_id)
 def assign_conversation_to_chatter(*, conversation, chatter, assigned_by):
     if chatter.profile.role != UserProfile.Role.CHATTER:
         raise ValidationError({"chatter_id": "Target user must have the CHATTER role."})
+    if not chatter.is_active:
+        raise ValidationError({"chatter_id": "Target user must be active."})
 
     if conversation.status != Conversation.Status.ACTIVE:
         raise ValidationError({"detail": "Only ACTIVE conversations can be assigned."})

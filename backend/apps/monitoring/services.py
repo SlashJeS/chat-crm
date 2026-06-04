@@ -10,14 +10,15 @@ from apps.monitoring.serializers import MonitorChatterSerializer
 from apps.presence.services import get_online_user_ids
 
 
-def build_monitor_snapshot():
+def build_monitor_snapshot(*, active_only=False):
     now = timezone.now()
     overdue_threshold = now - timedelta(seconds=settings.RESPONSE_SLA_SECONDS)
     chatters = []
 
-    users = list(
-        User.objects.filter(profile__role=UserProfile.Role.CHATTER).select_related("profile")
-    )
+    users_qs = User.objects.filter(profile__role=UserProfile.Role.CHATTER)
+    if active_only:
+        users_qs = users_qs.filter(is_active=True)
+    users = list(users_qs.select_related("profile"))
     online_user_ids = get_online_user_ids([user.id for user in users])
 
     for user in users:
@@ -56,7 +57,7 @@ def get_serialized_monitor_snapshot():
 
 
 def build_chatter_workload_list():
-    snapshot = build_monitor_snapshot()
+    snapshot = build_monitor_snapshot(active_only=True)
     return [
         {
             "id": chatter["id"],

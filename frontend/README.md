@@ -234,6 +234,6 @@ cp ../.env.production.example ../.env
 docker compose -f docker-compose.prod.yml up --build -d
 ```
 
-Build args `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` come from `.env`. For same-origin host nginx use `/api` and `auto`.
+Build args come from `.env`. Migrate and first-time seed run automatically in the backend entrypoint.
 
 Local compose uses the `dev` target (Vite dev server on port 5173).
