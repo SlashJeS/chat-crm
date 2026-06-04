@@ -52,4 +52,24 @@ daphne -b 0.0.0.0 -p 8000 config.asgi:application
 | `apps.realtime` | WebSocket consumers and event publishing (placeholder) |
 | `apps.monitoring` | Teamlead monitor API and WebSocket (placeholder) |
 | `apps.presence` | Presence heartbeat and TTL (placeholder) |
-| `apps.demo` | Demo seed management command (placeholder) |
+| `apps.demo` | Demo seed management command |
+
+## Demo data
+
+```bash
+python manage.py seed_demo
+```
+
+With Docker Compose:
+
+```bash
+docker compose exec backend python manage.py seed_demo
+```
+
+Test accounts:
+
+- lead / password123
+- chatter1 / password123
+- chatter2 / password123
+- chatter3 / password123
+- admin / password123

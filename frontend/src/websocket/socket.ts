@@ -1,6 +1,4 @@
-import type { WebSocketEvent } from "@/types/websocket";
-
-type MessageHandler = (event: WebSocketEvent) => void;
+type MessageHandler = (data: Record<string, unknown>) => void;
 type VoidHandler = () => void;
 
 export class SocketClient {
@@ -10,14 +8,17 @@ export class SocketClient {
   private closeHandlers: VoidHandler[] = [];
   private errorHandlers: Array<(event: Event) => void> = [];
 
-  constructor(private readonly url: string) {}
+  get connected(): boolean {
+    return this.socket?.readyState === WebSocket.OPEN;
+  }
 
-  connect(): void {
+  connect(url: string): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
       return;
     }
 
-    this.socket = new WebSocket(this.url);
+    this.disconnect();
+    this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
       this.openHandlers.forEach((handler) => handler());
@@ -25,12 +26,10 @@ export class SocketClient {
 
     this.socket.onmessage = (event) => {
       try {
-        const data = JSON.parse(String(event.data)) as WebSocketEvent;
+        const data = JSON.parse(String(event.data)) as Record<string, unknown>;
         this.messageHandlers.forEach((handler) => handler(data));
       } catch {
-        this.messageHandlers.forEach((handler) =>
-          handler({ type: "raw", payload: event.data }),
-        );
+        this.messageHandlers.forEach((handler) => handler({ type: "raw", data: event.data }));
       }
     };
 
@@ -44,15 +43,22 @@ export class SocketClient {
   }
 
   disconnect(): void {
-    this.socket?.close();
-    this.socket = null;
+    if (this.socket) {
+      this.socket.onopen = null;
+      this.socket.onmessage = null;
+      this.socket.onclose = null;
+      this.socket.onerror = null;
+      this.socket.close();
+      this.socket = null;
+    }
   }
 
-  send(data: unknown): void {
-    if (this.socket?.readyState !== WebSocket.OPEN) {
-      return;
+  send(data: unknown): boolean {
+    if (!this.connected) {
+      return false;
     }
-    this.socket.send(JSON.stringify(data));
+    this.socket?.send(JSON.stringify(data));
+    return true;
   }
 
   onMessage(handler: MessageHandler): void {
@@ -70,8 +76,15 @@ export class SocketClient {
   onError(handler: (event: Event) => void): void {
     this.errorHandlers.push(handler);
   }
+
+  clearHandlers(): void {
+    this.messageHandlers = [];
+    this.openHandlers = [];
+    this.closeHandlers = [];
+    this.errorHandlers = [];
+  }
 }
 
-export function createSocketClient(url: string): SocketClient {
-  return new SocketClient(url);
+export function createSocketClient(): SocketClient {
+  return new SocketClient();
 }

@@ -108,6 +108,11 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
+RESPONSE_SLA_SECONDS = int(os.getenv("RESPONSE_SLA_SECONDS", "60"))
+PRESENCE_HEARTBEAT_INTERVAL_SECONDS = int(os.getenv("PRESENCE_HEARTBEAT_INTERVAL_SECONDS", "5"))
+PRESENCE_GRACE_SECONDS = int(os.getenv("PRESENCE_GRACE_SECONDS", "15"))
+MONITOR_REFRESH_SECONDS = int(os.getenv("MONITOR_REFRESH_SECONDS", "5"))
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
