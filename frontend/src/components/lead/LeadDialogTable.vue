@@ -23,6 +23,13 @@ function assignLabel(conversation: LeadConversation): string {
 function previewText(conversation: LeadConversation): string {
   return conversation.last_message?.text ?? "No messages yet";
 }
+
+function slaWaitingText(conversation: LeadConversation): string | null {
+  if (!conversation.waiting_since) {
+    return null;
+  }
+  return formatRelativeTime(conversation.waiting_since);
+}
 </script>
 
 <template>
@@ -38,16 +45,24 @@ function previewText(conversation: LeadConversation): string {
 
     <div v-else class="lead-table__scroll">
       <table class="lead-table__table">
+        <colgroup>
+          <col class="lead-table__col-fan" />
+          <col class="lead-table__col-model" />
+          <col class="lead-table__col-assigned" />
+          <col class="lead-table__col-message" />
+          <col class="lead-table__col-sla" />
+          <col class="lead-table__col-updated" />
+          <col class="lead-table__col-action" />
+        </colgroup>
         <thead>
           <tr>
             <th scope="col">Fan</th>
             <th scope="col">Model</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Last message</th>
-            <th scope="col">Waiting</th>
-            <th scope="col">Overdue</th>
+            <th scope="col">SLA</th>
             <th scope="col">Updated</th>
-            <th scope="col"><span class="sr-only">Action</span></th>
+            <th scope="col">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -66,35 +81,41 @@ function previewText(conversation: LeadConversation): string {
             <td data-label="Fan">
               <div class="lead-table__fan">
                 <span class="avatar avatar--sm">{{ getInitials(conversation.fan.display_name) }}</span>
-                <div>
+                <div class="lead-table__fan-text">
                   <div class="lead-table__fan-name">{{ conversation.fan.display_name }}</div>
                   <div class="lead-table__fan-id muted">{{ conversation.fan.external_id }}</div>
                 </div>
               </div>
             </td>
-            <td data-label="Model">{{ conversation.model_account.name }}</td>
-            <td data-label="Assigned to">{{ conversation.assigned_chatter.display_name }}</td>
+            <td data-label="Model">
+              <span class="lead-table__cell-text">{{ conversation.model_account.name }}</span>
+            </td>
+            <td data-label="Assigned to">
+              <span class="lead-table__cell-text">{{ conversation.assigned_chatter.display_name }}</span>
+            </td>
             <td data-label="Last message">
               <span class="lead-table__preview">{{ previewText(conversation) }}</span>
             </td>
-            <td data-label="Waiting">
-              {{
-                conversation.waiting_since
-                  ? formatRelativeTime(conversation.waiting_since)
-                  : "—"
-              }}
-            </td>
-            <td data-label="Overdue">
-              <OverdueBadge v-if="conversation.is_overdue" :count="1" />
-              <span v-else class="muted">—</span>
+            <td data-label="SLA">
+              <div v-if="conversation.is_overdue" class="lead-table__sla">
+                <span class="lead-table__sla-time">{{ slaWaitingText(conversation) }}</span>
+                <OverdueBadge :count="1" label="Overdue" tone="danger" />
+              </div>
+              <div v-else-if="conversation.waiting_since" class="lead-table__sla">
+                <span class="lead-table__sla-time">{{ slaWaitingText(conversation) }}</span>
+                <OverdueBadge :count="0" label="Waiting" tone="warning" :show-dot="false" />
+              </div>
+              <span v-else class="lead-table__sla-idle muted">No wait</span>
             </td>
             <td data-label="Updated">
-              {{ conversation.last_message_at ? formatRelativeTime(conversation.last_message_at) : "—" }}
+              <span class="lead-table__cell-text">
+                {{ conversation.last_message_at ? formatRelativeTime(conversation.last_message_at) : "—" }}
+              </span>
             </td>
-            <td data-label="Action">
+            <td data-label="Action" class="lead-table__action-cell">
               <button
                 type="button"
-                class="btn btn-ghost"
+                class="btn btn-secondary lead-table__action-btn"
                 @click.stop="selectConversation(conversation)"
               >
                 {{ assignLabel(conversation) }}
@@ -111,6 +132,7 @@ function previewText(conversation: LeadConversation): string {
 .lead-table {
   padding: 0;
   overflow: hidden;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -121,16 +143,47 @@ function previewText(conversation: LeadConversation): string {
 
 .lead-table__scroll {
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .lead-table__table {
   width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
   border-collapse: collapse;
+}
+
+.lead-table__col-fan {
+  width: 170px;
+}
+
+.lead-table__col-model {
+  width: 120px;
+}
+
+.lead-table__col-assigned {
+  width: 140px;
+}
+
+.lead-table__col-message {
+  width: 260px;
+}
+
+.lead-table__col-sla {
+  width: 150px;
+}
+
+.lead-table__col-updated {
+  width: 90px;
+}
+
+.lead-table__col-action {
+  width: 120px;
 }
 
 .lead-table__table th,
 .lead-table__table td {
-  padding: var(--space-3) var(--space-4);
+  padding: 0.625rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
   vertical-align: middle;
@@ -161,11 +214,14 @@ function previewText(conversation: LeadConversation): string {
 
 .lead-table__row--selected {
   background: var(--color-primary-soft);
+}
+
+.lead-table__row--selected td:first-child {
   box-shadow: inset 2px 0 0 var(--color-primary);
 }
 
-.lead-table__row--overdue:not(.lead-table__row--selected) {
-  box-shadow: inset 2px 0 0 var(--color-danger);
+.lead-table__row--overdue:not(.lead-table__row--selected) td:first-child {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--color-danger) 55%, transparent);
 }
 
 .lead-table__fan {
@@ -175,19 +231,30 @@ function previewText(conversation: LeadConversation): string {
   min-width: 0;
 }
 
-.lead-table__fan-name {
+.lead-table__fan-text {
+  min-width: 0;
+}
+
+.lead-table__fan-name,
+.lead-table__cell-text {
+  display: block;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lead-table__fan-id {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lead-table__preview {
   display: block;
-  max-width: 16rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -195,7 +262,38 @@ function previewText(conversation: LeadConversation): string {
   color: var(--color-text-muted);
 }
 
+.lead-table__sla {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.lead-table__sla-time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.lead-table__sla-idle {
+  font-size: 0.8125rem;
+}
+
+.lead-table__action-cell {
+  text-align: center;
+}
+
+.lead-table__action-btn {
+  min-width: 5.5rem;
+  padding: 0.35rem 0.625rem;
+  font-size: 0.8125rem;
+}
+
 @media (max-width: 900px) {
+  .lead-table__table {
+    min-width: 0;
+  }
+
   .lead-table__table thead {
     display: none;
   }
@@ -232,6 +330,10 @@ function previewText(conversation: LeadConversation): string {
 
   .lead-table__preview {
     max-width: 12rem;
+    text-align: right;
+  }
+
+  .lead-table__action-cell {
     text-align: right;
   }
 }

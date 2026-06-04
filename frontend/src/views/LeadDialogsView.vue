@@ -42,7 +42,7 @@ onUnmounted(() => {
     <div class="lead-page page">
       <header class="lead-page__header page-header">
         <div>
-          <h1 class="page-title">Dialogs</h1>
+          <h1 class="page-title">Dialog Assignment</h1>
           <p class="page-subtitle">
             Review fan dialogs and assign them to available chatters
           </p>
@@ -96,8 +96,10 @@ onUnmounted(() => {
       <template v-else>
         <LeadDialogFilters />
 
-        <div class="lead-page__layout">
-          <LeadDialogTable />
+        <div class="lead-page__content">
+          <div class="lead-page__table-panel">
+            <LeadDialogTable />
+          </div>
           <AssignmentPanel />
         </div>
       </template>
@@ -108,6 +110,7 @@ onUnmounted(() => {
 <style scoped>
 .lead-page {
   overflow-x: hidden;
+  min-width: 0;
 }
 
 .lead-page__header {
@@ -124,12 +127,22 @@ onUnmounted(() => {
   gap: var(--space-3);
 }
 
-.lead-page__layout {
+.lead-page__content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: var(--space-3);
-  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--space-4);
   align-items: start;
+  min-width: 0;
+}
+
+.lead-page__table-panel {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .lead-page__content {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {
@@ -139,10 +152,6 @@ onUnmounted(() => {
 
   .lead-page__refresh {
     width: 100%;
-  }
-
-  .lead-page__layout {
-    grid-template-columns: 1fr;
   }
 }
 </style>

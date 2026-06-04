@@ -122,6 +122,17 @@ async function handleAssign(chatterId: number): Promise<void> {
   min-height: 0;
   padding: 0;
   overflow: hidden;
+  width: 100%;
+  position: sticky;
+  top: calc(var(--topbar-height) + var(--space-4));
+  max-height: calc(100vh - var(--topbar-height) - var(--space-8));
+}
+
+@media (max-width: 1100px) {
+  .assignment-panel {
+    position: static;
+    max-height: none;
+  }
 }
 
 .assignment-panel__header {
@@ -138,7 +149,7 @@ async function handleAssign(chatterId: number): Promise<void> {
 }
 
 .assignment-panel__details {
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
@@ -198,7 +209,7 @@ async function handleAssign(chatterId: number): Promise<void> {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   overflow: hidden;
 }
 
@@ -230,8 +241,10 @@ async function handleAssign(chatterId: number): Promise<void> {
 
 .assignment-panel__empty {
   flex: 1;
-  display: grid;
-  place-content: center;
-  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--space-5) var(--space-4);
+  text-align: left;
 }
 </style>

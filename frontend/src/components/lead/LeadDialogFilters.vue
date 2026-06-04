@@ -127,7 +127,7 @@ watch(
 }
 
 .lead-filters__search {
-  flex: 1 1 220px;
+  flex: 1 1 minmax(220px, 1fr);
   min-width: 0;
 }
 
