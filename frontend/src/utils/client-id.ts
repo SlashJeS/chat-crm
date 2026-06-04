@@ -1,7 +1,5 @@
-export function createClientMessageId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
+import { v4 as uuidv4 } from "uuid";
 
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
+export function createClientMessageId(): string {
+  return uuidv4();
 }
