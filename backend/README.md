@@ -62,10 +62,26 @@ python manage.py run_demo_activity_once
 
 ## Docker
 
+Local development:
+
 ```bash
 docker compose up --build
 docker compose exec backend python manage.py seed_demo
 ```
+
+Production-style deployment (build + run everything in Docker):
+
+```bash
+cp ../.env.production.example ../.env
+docker compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml exec backend python manage.py seed_demo
+```
+
+Frontend builds inside the `frontend` container and listens on `127.0.0.1:3000`. Backend on `127.0.0.1:8000`. Host nginx proxies to these ports.
+
+Backend container entrypoint runs `migrate` and `collectstatic` before starting Daphne. Static files are served via WhiteNoise.
+
+Production settings (`config.settings.production`) enable secure cookies and `SECURE_PROXY_SSL_HEADER` when `DJANGO_DEBUG=0`. Optional `CSRF_TRUSTED_ORIGINS` for Django admin behind HTTPS.
 
 ## Manual local development
 

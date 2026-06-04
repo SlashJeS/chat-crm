@@ -7,4 +7,13 @@ function requiredEnv(name: keyof ImportMetaEnv): string {
 }
 
 export const API_BASE_URL = requiredEnv("VITE_API_BASE_URL");
-export const WS_BASE_URL = requiredEnv("VITE_WS_BASE_URL");
+
+const wsConfiguredValue = requiredEnv("VITE_WS_BASE_URL");
+
+export function resolveWebSocketBaseUrl(): string {
+  if (wsConfiguredValue === "auto") {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.host}`;
+  }
+  return wsConfiguredValue;
+}

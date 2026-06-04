@@ -36,4 +36,9 @@ Runtime settings are supplied via the repo root `.env` file (see [.env.example](
 - **Invite links** — `FRONTEND_BASE_URL`
 - **Live demo activity** — `DEMO_ACTIVITY_ENABLED` (`0` by default). When `1`, a daemon thread in the backend process periodically generates safe incoming fan messages via `create_fan_message`, triggering normal WebSocket and monitor updates. No separate worker container. Manual one-shot: `python manage.py run_demo_activity_once`.
 
+## Deployment
+
+- **Local dev** — `docker compose up` with Vite dev server (5173) and Daphne (8000), source bind mounts
+- **Production-style** — `docker compose -f docker-compose.prod.yml up --build -d` runs postgres, redis, backend, and frontend containers; host nginx proxies to `127.0.0.1:3000` (frontend) and `127.0.0.1:8000` (backend)
+
 See also [api.md](api.md) and [websocket-events.md](websocket-events.md).

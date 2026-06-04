@@ -1,7 +1,7 @@
 import { computed, ref } from "vue";
 
 import { ACCESS_TOKEN_KEY } from "@/api/http";
-import { WS_BASE_URL } from "@/config/env";
+import { resolveWebSocketBaseUrl } from "@/config/env";
 import { useAuthStore } from "@/stores/auth.store";
 import { useConversationsStore } from "@/stores/conversations.store";
 import { useMessagesStore } from "@/stores/messages.store";
@@ -27,7 +27,7 @@ const lastError = ref<string | null>(null);
 function getSocketUrl(): string {
   const auth = useAuthStore();
   const token = auth.accessToken ?? localStorage.getItem(ACCESS_TOKEN_KEY);
-  return `${WS_BASE_URL}/ws/chat/?token=${token}`;
+  return `${resolveWebSocketBaseUrl()}/ws/chat/?token=${token}`;
 }
 
 function stopHeartbeat(): void {

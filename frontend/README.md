@@ -48,8 +48,8 @@ cp ../.env.example ../.env
 
 | Variable | Purpose |
 |----------|---------|
-| `VITE_API_BASE_URL` | REST API base URL (e.g. `http://localhost:8000/api`) |
-| `VITE_WS_BASE_URL` | WebSocket base URL (e.g. `ws://localhost:8000`) |
+| `VITE_API_BASE_URL` | REST API base URL (e.g. `http://localhost:8000/api` or `/api` with same-origin host proxy) |
+| `VITE_WS_BASE_URL` | WebSocket base URL (e.g. `ws://localhost:8000` or `auto` for same-origin host proxy) |
 
 Vite reads env from the **repository root** (`envDir` in `vite.config.ts`). Missing variables throw at dev/build time via `src/config/env.ts`.
 
@@ -222,7 +222,18 @@ Other scripts:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_BASE_URL` | Yes | REST API base URL |
-| `VITE_WS_BASE_URL` | Yes | WebSocket base URL |
+| `VITE_API_BASE_URL` | Yes | REST API base URL (`/api` when host reverse proxy forwards to backend) |
+| `VITE_WS_BASE_URL` | Yes | WebSocket base URL (`auto` derives `ws(s)://` from browser host) |
 
-No default URLs are hardcoded in application code.
+## Production build
+
+Production compose builds and runs the frontend container automatically:
+
+```bash
+cp ../.env.production.example ../.env
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Build args `VITE_API_BASE_URL` and `VITE_WS_BASE_URL` come from `.env`. For same-origin host nginx use `/api` and `auto`.
+
+Local compose uses the `dev` target (Vite dev server on port 5173).

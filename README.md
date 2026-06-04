@@ -74,7 +74,7 @@ cp .env.example .env
 
 | `VITE_API_BASE_URL` | Frontend | REST API base URL |
 
-| `VITE_WS_BASE_URL` | Frontend | WebSocket base URL |
+| `VITE_WS_BASE_URL` | Frontend | WebSocket base URL (`auto` for same-origin production deploy) |
 
 | `POSTGRES_DB` | Postgres container | Database name |
 
@@ -474,5 +474,72 @@ See [docs/websocket-events.md](docs/websocket-events.md) for the full event refe
 
 
 
-_TBD._
+### Production-style Docker
+
+
+
+Builds and runs postgres, redis, backend, and frontend in containers. Host nginx proxies to them.
+
+
+
+```bash
+
+cp .env.production.example .env
+
+docker compose -f docker-compose.prod.yml up --build -d
+
+docker compose -f docker-compose.prod.yml exec backend python manage.py seed_demo
+
+```
+
+
+
+| Container | Host port |
+
+|-----------|-----------|
+
+| frontend | 127.0.0.1:3000 |
+
+| backend | 127.0.0.1:8000 |
+
+
+
+Configure host nginx: `/` → `:3000`, `/api/` `/ws/` `/admin/` `/static/` → `:8000`.
+
+
+
+### Deployment checklist
+
+
+
+- Copy and edit `.env` from `.env.production.example`
+
+- `docker compose -f docker-compose.prod.yml up --build -d`
+
+- Seed: `docker compose -f docker-compose.prod.yml exec backend python manage.py seed_demo`
+
+- Configure host nginx to proxy to ports 3000 and 8000
+
+- Enable `DEMO_ACTIVITY_ENABLED=1` only for live demos
+
+
+
+### Health check
+
+
+
+`GET /api/health/` — available on backend port 8000 (local dev and production compose).
+
+
+
+### Known limitations
+
+
+
+- Reverse proxy, TLS, and static frontend hosting are configured on the server — not included in this repo
+
+- Media uploads are not used by this demo; only static files via WhiteNoise
+
+- WebSocket scaling across multiple backend replicas requires sticky sessions or shared channel layer tuning beyond this compose file
+
 
