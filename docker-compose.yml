@@ -1,0 +1,4 @@
+# CRM Chatters Demo — Docker Compose
+# Services (postgres, redis, backend, frontend) will be added in a later step.
+
+services: {}

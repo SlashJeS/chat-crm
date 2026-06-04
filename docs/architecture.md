@@ -1,0 +1,29 @@
+# Architecture
+
+## Overview
+
+CRM Chatters Demo separates **REST** and **WebSocket** responsibilities:
+
+- **REST** is used for snapshots, lists, history, authentication, and reconnect synchronization.
+- **WebSocket** is used for live events only.
+
+PostgreSQL is the **source of truth** for persistent data. Redis is used for Django Channels (pub/sub and channel layers) and for **presence TTL** (heartbeat-based online state).
+
+## Backend
+
+- **Django** — web framework and ORM
+- **Django REST Framework (DRF)** — REST API
+- **Django Channels** — WebSocket consumers and async routing
+
+## Frontend
+
+- **Vue 3** — UI (Composition API)
+- **Pinia** — client state management
+
+## Data flow (high level)
+
+1. Clients load initial state via REST (conversations, messages, auth).
+2. Clients subscribe to WebSocket channels for live updates (new messages, read state, presence, monitor events).
+3. On reconnect, clients resync via REST and re-subscribe to WebSocket rooms.
+
+See also [api.md](api.md) and [websocket-events.md](websocket-events.md).
