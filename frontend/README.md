@@ -30,7 +30,7 @@ Toggle light/dark from the app header or login page. If no preference is saved, 
 
 | Surface | Description |
 |---------|-------------|
-| Login | Split hero + sign-in panel with demo accounts |
+| Login | Split hero + sign-in panel |
 | App shell | Collapsible sidebar (nav + theme), top bar (page title + user menu) |
 | Chatter Workspace | Two-column inbox: dialog list + chat panel |
 | Teamlead Monitor | KPI cards, SLA config, chatter workload table |
