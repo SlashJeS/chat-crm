@@ -2,7 +2,9 @@ from config.settings.env import get_optional_env
 
 from .base import *  # noqa: F403
 
-if not DEBUG:
+_use_https = FRONTEND_BASE_URL.startswith("https://")
+
+if not DEBUG and _use_https:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
