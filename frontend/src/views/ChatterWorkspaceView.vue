@@ -4,13 +4,12 @@ import { computed, onMounted, onUnmounted } from "vue";
 import ChatWindow from "@/components/chat/ChatWindow.vue";
 import DialogList from "@/components/chat/DialogList.vue";
 import AppLayout from "@/components/common/AppLayout.vue";
-import ErrorState from "@/components/common/ErrorState.vue";
-import LoadingState from "@/components/common/LoadingState.vue";
 import { useChatSocket } from "@/composables/useChatSocket";
 import { useAuthStore } from "@/stores/auth.store";
 import { useConversationsStore } from "@/stores/conversations.store";
 import { useMessagesStore } from "@/stores/messages.store";
 import type { SendMessagePayload } from "@/types/messages";
+import { getConnectionTone, getRealtimeConnectionLabel } from "@/utils/status";
 
 const auth = useAuthStore();
 const conversationsStore = useConversationsStore();
@@ -26,6 +25,16 @@ const activeMessagesError = computed(() => {
   }
   return messagesStore.errorByConversationId[id] ?? null;
 });
+
+const conversationCount = computed(() => conversationsStore.conversations.length);
+
+const overdueCount = computed(
+  () => conversationsStore.conversations.filter((c) => c.is_overdue).length,
+);
+
+const connectionPillClass = computed(() =>
+  `status-pill--${getConnectionTone(chatSocket.connectionState.value, Boolean(chatSocket.lastError.value))}`,
+);
 
 async function activateConversation(conversationId: number): Promise<void> {
   conversationsStore.setActiveConversation(conversationId);
@@ -83,139 +92,145 @@ onUnmounted(() => {
   conversationsStore.clear();
   messagesStore.clear();
 });
-
-const connectionStatusClass = computed(() => {
-  const state = chatSocket.connectionState.value;
-  if (state === "connected") {
-    return "workspace__connection--connected";
-  }
-  if (state === "reconnecting" || state === "connecting") {
-    return "workspace__connection--reconnecting";
-  }
-  if (chatSocket.lastError.value) {
-    return "workspace__connection--error";
-  }
-  return "workspace__connection--disconnected";
-});
 </script>
 
 <template>
   <AppLayout>
-    <LoadingState
-      v-if="conversationsStore.isLoading"
-      message="Loading conversations..."
-    />
-
-    <ErrorState
-      v-else-if="conversationsStore.error"
-      title="Could not load conversations"
-      :message="conversationsStore.error"
-      retry-label="Retry"
-      @retry="handleRetryConversations"
-    />
-
-    <div v-else class="workspace">
-      <aside class="workspace__sidebar">
-        <div class="workspace__connection" :class="connectionStatusClass">
-          <span class="workspace__connection-label">{{ chatSocket.connectionLabel.value }}</span>
-          <span v-if="chatSocket.lastError.value" class="workspace__connection-error">
-            {{ chatSocket.lastError.value }}
-          </span>
+    <div class="workspace-page page">
+      <header class="workspace-page__header page-header">
+        <div>
+          <h1 class="page-title">Chatter Workspace</h1>
+          <p class="page-subtitle">Manage active fan dialogs in realtime</p>
         </div>
-        <DialogList
-          :conversations="conversationsStore.conversations"
-          :active-conversation-id="conversationsStore.activeConversationId"
-          @select="handleSelectConversation"
-        />
-      </aside>
-      <section class="workspace__main">
-        <ChatWindow
-          :conversation="conversationsStore.activeConversation"
-          :messages="
-            conversationsStore.activeConversationId
-              ? messagesStore.getMessages(conversationsStore.activeConversationId)
-              : []
-          "
-          :has-more="
-            conversationsStore.activeConversationId
-              ? messagesStore.hasMoreByConversationId[conversationsStore.activeConversationId] ?? false
-              : false
-          "
-          :loading-messages="
-            conversationsStore.activeConversationId
-              ? messagesStore.loadingByConversationId[conversationsStore.activeConversationId] ?? false
-              : false
-          "
-          :messages-error="activeMessagesError"
-          :is-connected="chatSocket.isConnected.value"
-          :connection-label="chatSocket.connectionLabel.value"
-          :connection-state="chatSocket.connectionState.value"
-          :socket-error="chatSocket.lastError.value"
-          @send-message="handleSendMessage"
-          @load-older="handleLoadOlder"
-          @retry-messages="handleRetryMessages"
-        />
-      </section>
+        <div class="workspace-page__stats toolbar">
+          <span class="status-pill" :class="connectionPillClass">
+            <span class="status-dot" aria-hidden="true" />
+            {{ getRealtimeConnectionLabel(chatSocket.connectionState.value) }}
+          </span>
+          <span class="badge badge-muted">{{ conversationCount }} active dialogs</span>
+          <span v-if="overdueCount > 0" class="badge badge-danger">{{ overdueCount }} overdue</span>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="workspace__sidebar panel">
+          <DialogList
+            :conversations="conversationsStore.conversations"
+            :active-conversation-id="conversationsStore.activeConversationId"
+            :loading="conversationsStore.isLoading"
+            :error="conversationsStore.error"
+            @select="handleSelectConversation"
+            @retry="handleRetryConversations"
+          />
+        </aside>
+        <section class="workspace__main panel">
+          <ChatWindow
+            :conversation="conversationsStore.activeConversation"
+            :messages="
+              conversationsStore.activeConversationId
+                ? messagesStore.getMessages(conversationsStore.activeConversationId)
+                : []
+            "
+            :has-more="
+              conversationsStore.activeConversationId
+                ? messagesStore.hasMoreByConversationId[conversationsStore.activeConversationId] ?? false
+                : false
+            "
+            :loading-messages="
+              conversationsStore.activeConversationId
+                ? messagesStore.loadingByConversationId[conversationsStore.activeConversationId] ?? false
+                : false
+            "
+            :messages-error="activeMessagesError"
+            :is-connected="chatSocket.isConnected.value"
+            :connection-label="chatSocket.connectionLabel.value"
+            :connection-state="chatSocket.connectionState.value"
+            :socket-error="chatSocket.lastError.value"
+            @send-message="handleSendMessage"
+            @load-older="handleLoadOlder"
+            @retry-messages="handleRetryMessages"
+          />
+        </section>
+      </div>
     </div>
   </AppLayout>
 </template>
 
 <style scoped>
+.workspace-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (min-width: 901px) {
+  .workspace-page {
+    overflow: hidden;
+  }
+}
+
+.workspace-page__header {
+  flex: 0 0 auto;
+  padding-bottom: 0;
+  gap: var(--space-3);
+}
+
 .workspace {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  height: calc(100vh - 65px);
-  margin: -1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  background: #fff;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: var(--space-3);
+}
+
+@media (min-width: 901px) {
+  .workspace {
+    overflow: hidden;
+  }
 }
 
 .workspace__sidebar,
 .workspace__main {
   min-height: 0;
-}
-
-.workspace__sidebar {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e2e8f0;
+  padding: 0;
 }
 
-.workspace__connection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.65rem 1rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  flex-shrink: 0;
+@media (min-width: 901px) {
+  .workspace__sidebar,
+  .workspace__main {
+    overflow: hidden;
+  }
 }
 
-.workspace__connection-label {
-  font-weight: 600;
+.workspace-page__stats {
+  flex-wrap: wrap;
 }
 
-.workspace__connection--connected .workspace__connection-label {
-  color: #15803d;
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--space-3);
+  }
+
+  .workspace__sidebar {
+    max-height: 40vh;
+    overflow: hidden;
+  }
+
+  .workspace__main {
+    min-height: 50vh;
+    overflow: hidden;
+  }
 }
 
-.workspace__connection--reconnecting .workspace__connection-label {
-  color: #b45309;
-}
-
-.workspace__connection--disconnected .workspace__connection-label {
-  color: #64748b;
-}
-
-.workspace__connection--error .workspace__connection-label {
-  color: #c0392b;
-}
-
-.workspace__connection-error {
-  font-size: 0.8rem;
-  color: #c0392b;
+@media (max-width: 600px) {
+  .workspace-page__header {
+    flex-direction: column;
+  }
 }
 </style>

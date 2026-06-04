@@ -10,6 +10,32 @@ Vue 3 frontend for CRM Chatters Demo.
 - Pinia
 - Vue Router
 - Axios
+- Plain CSS design system (no UI library)
+
+## Design system
+
+The frontend uses a token-based design system with **dark theme as the default** and a responsive SaaS dashboard UI built with plain CSS — no UI framework.
+
+- **Tokens:** `src/styles/tokens.css` — CSS variables for dark and light themes (`data-theme="dark"` / `data-theme="light"`)
+- **Base styles:** `src/styles/base.css` — reset, typography, focus, scrollbars
+- **Utilities:** `src/styles/utilities.css` — reusable classes (`btn`, `card`, `panel`, `badge`, `status-pill`, `empty-state`, etc.)
+- **Theme store:** `src/stores/theme.store.ts` — persists preference in `localStorage` under `crm-theme`
+- **Theme toggle:** `src/components/common/ThemeToggle.vue`
+- **Logo assets:** `src/assets/brand/` — SVG mark and full logos for dark/light backgrounds
+- **Favicon:** `public/favicon.svg` — logo mark used in `index.html`
+
+Toggle light/dark from the app header or login page. If no preference is saved, dark mode is applied on startup.
+
+### UI surfaces
+
+| Surface | Description |
+|---------|-------------|
+| Login | Split hero + sign-in panel with demo accounts |
+| App shell | Sticky header, role nav, theme toggle, user menu |
+| Chatter Workspace | Two-column inbox: dialog list + chat panel |
+| Teamlead Monitor | KPI cards, SLA config, chatter workload table |
+
+All surfaces use shared tokens and utilities, support dark/light themes, and are responsive from mobile to desktop widths.
 
 ## Routes
 
@@ -35,7 +61,7 @@ Test users are created by `python manage.py seed_demo`.
 
 The `/chatter` route provides a functional workspace:
 
-- Conversation list sorted by `last_message_at`
+- Dialog list sorted by `last_message_at`
 - Message history with scroll-up pagination
 - WebSocket live updates for `message.created` and `conversation.updated`
 - Send TEXT and PPV messages through WebSocket

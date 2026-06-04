@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" fill="none" role="img" aria-label="CRM Chatters">
+  <circle cx="24" cy="24" r="20" stroke="#6366F1" stroke-width="1.5" opacity="0.35"/>
+  <circle cx="24" cy="24" r="14" stroke="#818CF8" stroke-width="1.25" stroke-dasharray="3 4" opacity="0.55"/>
+  <path d="M15 18.5C15 16.0147 17.0147 14 19.5 14H26.5C28.9853 14 31 16.0147 31 18.5V24.5C31 26.9853 28.9853 29 26.5 29H22.5L18 32.5V29H19.5C17.0147 29 15 26.9853 15 24.5V18.5Z" fill="#6366F1"/>
+  <circle cx="33.5" cy="13.5" r="3.5" fill="#22C55E"/>
+  <circle cx="33.5" cy="13.5" r="5.5" stroke="#22C55E" stroke-width="1" opacity="0.45"/>
+  <text x="52" y="30" fill="#F1F5F9" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="18" font-weight="700" letter-spacing="-0.02em">CRM Chatters</text>
+</svg>

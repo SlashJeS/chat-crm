@@ -11,53 +11,63 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="error-state">
-    <strong v-if="title" class="error-state__title">{{ title }}</strong>
-    <p class="error-state__message">{{ message }}</p>
-    <button
-      v-if="retryLabel"
-      type="button"
-      class="error-state__retry"
-      @click="emit('retry')"
-    >
-      {{ retryLabel }}
-    </button>
+  <div class="error-state section-card" role="alert">
+    <div class="error-state__icon" aria-hidden="true">!</div>
+    <div class="error-state__body">
+      <strong v-if="title" class="error-state__title">{{ title }}</strong>
+      <p class="error-state__message">{{ message }}</p>
+      <button
+        v-if="retryLabel"
+        type="button"
+        class="btn btn-danger error-state__retry"
+        @click="emit('retry')"
+      >
+        {{ retryLabel }}
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .error-state {
-  padding: 1rem 1.25rem;
-  border: 1px solid #f5c2c0;
-  background: #fdecea;
-  color: #c0392b;
-  border-radius: 0.5rem;
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger-soft) 80%, var(--color-surface));
+}
+
+.error-state__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.error-state__body {
+  min-width: 0;
 }
 
 .error-state__title {
   display: block;
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--space-2);
   font-size: 0.95rem;
+  color: var(--color-text);
 }
 
 .error-state__message {
   margin: 0;
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  color: var(--color-text-muted);
 }
 
 .error-state__retry {
-  margin-top: 0.75rem;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid #c0392b;
-  border-radius: 0.375rem;
-  background: #fff;
-  color: #c0392b;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.error-state__retry:hover {
-  background: #fff5f5;
+  margin-top: var(--space-4);
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 const props = defineProps<{
   open: boolean;
@@ -14,6 +14,7 @@ const emit = defineEmits<{
 const text = ref("");
 const price = ref("19.99");
 const validationError = ref<string | null>(null);
+const textRef = ref<HTMLTextAreaElement | null>(null);
 
 function resetForm(): void {
   text.value = "";
@@ -23,9 +24,11 @@ function resetForm(): void {
 
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (isOpen) {
       resetForm();
+      await nextTick();
+      textRef.value?.focus();
     }
   },
 );
@@ -67,24 +70,52 @@ function handleSubmit(): void {
 
 <template>
   <div v-if="open" class="ppv-modal">
-    <div class="ppv-modal__backdrop" @click="emit('close')" />
-    <div class="ppv-modal__panel" role="dialog" aria-modal="true" aria-labelledby="ppv-modal-title">
-      <h3 id="ppv-modal-title">Send PPV Message</h3>
-      <p class="ppv-modal__subtitle">Paid content message with a custom price.</p>
-      <label class="ppv-modal__field">
-        <span>Message</span>
-        <textarea v-model="text" rows="3" placeholder="Describe the PPV content..." />
-      </label>
-      <label class="ppv-modal__field">
-        <span>Price (USD)</span>
-        <input v-model="price" type="number" min="0.01" step="0.01" placeholder="19.99" />
-      </label>
-      <p v-if="validationError" class="ppv-modal__error">{{ validationError }}</p>
+    <div class="ppv-modal__backdrop" aria-hidden="true" @click="emit('close')" />
+    <div
+      class="ppv-modal__panel panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ppv-modal-title"
+    >
+      <h3 id="ppv-modal-title" class="ppv-modal__title">Send PPV message</h3>
+      <p class="ppv-modal__subtitle muted">Paid message with a price attached.</p>
+
+      <div class="form-group ppv-modal__field">
+        <label class="form-label" for="ppv-text">Message</label>
+        <textarea
+          id="ppv-text"
+          ref="textRef"
+          v-model="text"
+          class="textarea"
+          rows="3"
+          placeholder="Describe the PPV content…"
+        />
+      </div>
+
+      <div class="form-group ppv-modal__field">
+        <label class="form-label" for="ppv-price">Price</label>
+        <div class="ppv-modal__price-wrap">
+          <span class="ppv-modal__currency" aria-hidden="true">$</span>
+          <input
+            id="ppv-price"
+            v-model="price"
+            class="input ppv-modal__price-input"
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="19.99"
+            inputmode="decimal"
+          />
+        </div>
+      </div>
+
+      <p v-if="validationError" class="form-error" role="alert">{{ validationError }}</p>
+
       <div class="ppv-modal__actions">
-        <button type="button" class="ppv-modal__cancel" @click="emit('close')">Cancel</button>
+        <button type="button" class="btn btn-ghost" @click="emit('close')">Cancel</button>
         <button
           type="button"
-          class="ppv-modal__submit"
+          class="btn btn-primary"
           :disabled="disabled"
           @click="handleSubmit"
         >
@@ -100,82 +131,86 @@ function handleSubmit(): void {
   position: fixed;
   inset: 0;
   z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10vh var(--space-4) var(--space-4);
 }
 
 .ppv-modal__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  backdrop-filter: blur(8px);
 }
 
 .ppv-modal__panel {
   position: relative;
-  width: min(420px, calc(100% - 2rem));
-  margin: 10vh auto 0;
-  padding: 1.25rem;
-  background: #fff;
-  border-radius: 0.75rem;
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
+  width: min(400px, 100%);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
 }
 
-.ppv-modal__panel h3 {
+.ppv-modal__title {
   margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .ppv-modal__subtitle {
-  margin: 0.35rem 0 0;
-  color: #64748b;
+  margin: var(--space-2) 0 0;
   font-size: 0.85rem;
 }
 
 .ppv-modal__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-top: 0.85rem;
-  font-size: 0.9rem;
-  color: #334155;
+  margin-top: var(--space-4);
 }
 
-.ppv-modal__field textarea,
-.ppv-modal__field input {
-  padding: 0.55rem 0.65rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
+.ppv-modal__price-wrap {
+  position: relative;
 }
 
-.ppv-modal__error {
-  margin: 0.75rem 0 0;
-  color: #c0392b;
-  font-size: 0.85rem;
+.ppv-modal__currency {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.ppv-modal__price-input {
+  padding-left: 1.65rem;
 }
 
 .ppv-modal__actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
 }
 
-.ppv-modal__cancel {
-  padding: 0.45rem 0.85rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  background: #fff;
-  cursor: pointer;
-}
+@media (max-width: 520px) {
+  .ppv-modal {
+    padding: var(--space-4);
+    align-items: center;
+  }
 
-.ppv-modal__submit {
-  padding: 0.45rem 0.85rem;
-  border: none;
-  border-radius: 0.375rem;
-  background: #7c3aed;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
+  .ppv-modal__panel {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
 
-.ppv-modal__submit:hover:not(:disabled) {
-  background: #6d28d9;
+  .ppv-modal__actions {
+    flex-wrap: wrap;
+  }
+
+  .ppv-modal__actions .btn {
+    flex: 1;
+    min-width: 7rem;
+  }
 }
 </style>

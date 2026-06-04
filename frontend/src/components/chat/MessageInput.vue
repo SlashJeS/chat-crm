@@ -41,21 +41,43 @@ defineExpose({ setError });
 
 <template>
   <form class="message-input" @submit.prevent="handleSubmit">
+    <label class="sr-only" for="message-input-field">Message</label>
     <textarea
+      id="message-input-field"
       v-model="text"
+      class="textarea message-input__textarea"
       rows="2"
-      placeholder="Type a message… Enter to send, Shift+Enter for newline"
+      placeholder="Type a message…"
       :disabled="disabled"
       @keydown="handleKeydown"
     />
     <div class="message-input__footer">
-      <p v-if="localError || socketError" class="message-input__error">
-        {{ localError || socketError }}
-      </p>
-      <p v-else-if="disabled" class="message-input__hint">
-        Messaging is unavailable while disconnected.
-      </p>
-      <button type="submit" class="message-input__send" :disabled="!canSend">
+      <div class="message-input__hints">
+        <p v-if="localError || socketError" class="message-input__error" role="alert">
+          {{ localError || socketError }}
+        </p>
+        <p v-else-if="disabled" class="message-input__hint message-input__hint--warning">
+          <span class="status-dot status-dot--danger" aria-hidden="true" />
+          Realtime disconnected — messaging unavailable
+        </p>
+        <p v-else class="message-input__hint muted">
+          Enter to send · Shift+Enter for new line
+        </p>
+      </div>
+      <button
+        type="submit"
+        class="btn btn-primary message-input__send"
+        :disabled="!canSend"
+        aria-label="Send message"
+      >
+        <svg
+          class="message-input__send-icon"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+        </svg>
         Send
       </button>
     </div>
@@ -66,57 +88,55 @@ defineExpose({ setError });
 .message-input {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid #e2e8f0;
-  background: #fff;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
 }
 
-.message-input textarea {
-  width: 100%;
-  min-height: 3.5rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  resize: vertical;
-}
-
-.message-input textarea:focus {
-  outline: 2px solid #93c5fd;
-  border-color: #60a5fa;
+.message-input__textarea {
+  min-height: 3.25rem;
+  max-height: 8rem;
 }
 
 .message-input__footer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
+}
+
+.message-input__hints {
+  min-width: 0;
+  flex: 1;
 }
 
 .message-input__send {
-  padding: 0.45rem 1rem;
-  border: none;
-  border-radius: 0.375rem;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
   flex-shrink: 0;
 }
 
-.message-input__send:hover:not(:disabled) {
-  background: #1d4ed8;
+.message-input__send-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .message-input__error {
   margin: 0;
-  color: #c0392b;
-  font-size: 0.85rem;
+  color: var(--color-danger);
+  font-size: 0.82rem;
 }
 
 .message-input__hint {
   margin: 0;
-  color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.message-input__hint--warning {
+  color: var(--color-danger);
+  font-weight: 600;
 }
 </style>
