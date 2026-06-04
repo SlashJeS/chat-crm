@@ -3,6 +3,7 @@ export const AUTH_REFRESH = "/auth/token/refresh/";
 export const ME = "/me/";
 export const CONVERSATIONS = "/conversations/";
 export const DEV_SIMULATE_FAN_MESSAGE = "/dev/simulate-fan-message/";
+export const MONITOR_SNAPSHOT = "/monitor/snapshot/";
 
 export const conversationDetail = (id: number) => `/conversations/${id}/`;
 export const conversationMessages = (id: number) => `/conversations/${id}/messages/`;
@@ -20,5 +21,6 @@ export const endpoints = {
   conversationMessages,
   conversationRead,
   devSimulateFanMessage: DEV_SIMULATE_FAN_MESSAGE,
+  monitorSnapshot: MONITOR_SNAPSHOT,
   monitor: "/monitor/",
 } as const;

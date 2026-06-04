@@ -41,7 +41,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ["sh", "./entrypoint.sh"]
 
   frontend:
     container_name: crm_frontend

@@ -6,17 +6,42 @@ import { useConversationsStore } from "@/stores/conversations.store";
 import { useMessagesStore } from "@/stores/messages.store";
 import type { SendMessagePayload } from "@/types/messages";
 import type { WsServerEvent } from "@/types/websocket";
-import { createSocketClient, type SocketClient } from "@/websocket/socket";
+import {
+  connectionStateLabel,
+  createSocketClient,
+  type ConnectionState,
+  type SocketClient,
+} from "@/websocket/socket";
 
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000";
+const HEARTBEAT_INTERVAL_MS = 5000;
 
 let socketClient: SocketClient | null = null;
 let subscribedDialogId: number | null = null;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+const connectionState = ref<ConnectionState>("idle");
+const reconnectAttempt = ref(0);
+const lastError = ref<string | null>(null);
 
 function getSocketUrl(): string {
   const auth = useAuthStore();
   const token = auth.accessToken ?? localStorage.getItem(ACCESS_TOKEN_KEY);
   return `${WS_BASE_URL}/ws/chat/?token=${token}`;
+}
+
+function stopHeartbeat(): void {
+  if (heartbeatTimer !== null) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
+function startHeartbeat(client: SocketClient): void {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => {
+    client.send({ type: "presence.heartbeat" });
+  }, HEARTBEAT_INTERVAL_MS);
 }
 
 function handleServerEvent(event: WsServerEvent): void {
@@ -31,10 +56,7 @@ function handleServerEvent(event: WsServerEvent): void {
       conversationsStore.applyConversationUpdated(event.conversation);
       break;
     case "conversation.read_state.updated":
-      conversationsStore.applyReadState(
-        event.conversation_id,
-        event.read_state.unread_count,
-      );
+      conversationsStore.applyReadStateUpdated(event.conversation_id, event.read_state);
       break;
     case "message.send.ack":
       if (event.client_message_id) {
@@ -49,25 +71,116 @@ function handleServerEvent(event: WsServerEvent): void {
   }
 }
 
-const isConnected = ref(false);
-const lastError = ref<string | null>(null);
+async function resyncAfterReconnect(): Promise<void> {
+  const conversationsStore = useConversationsStore();
+  const messagesStore = useMessagesStore();
+
+  lastError.value = null;
+  await conversationsStore.refreshConversations();
+
+  const activeId = conversationsStore.activeConversationId;
+  if (activeId === null) {
+    return;
+  }
+
+  const latestMessageId = messagesStore.getLatestMessageId(activeId);
+  if (latestMessageId !== null) {
+    await messagesStore.loadMissedMessages(activeId, latestMessageId);
+  } else {
+    await messagesStore.loadInitialMessages(activeId);
+  }
+
+  subscribeDialog(activeId);
+
+  const messages = messagesStore.getMessages(activeId);
+  const lastMessageId = messages.filter((message) => message.id > 0).at(-1)?.id;
+  if (lastMessageId) {
+    await conversationsStore.markConversationRead(activeId, lastMessageId);
+    markRead(activeId, lastMessageId);
+  }
+}
+
+function subscribeDialog(conversationId: number): void {
+  if (subscribedDialogId !== null && subscribedDialogId !== conversationId) {
+    unsubscribeDialog(subscribedDialogId);
+  }
+  subscribedDialogId = conversationId;
+  const sent = socketClient?.send({
+    type: "dialog.subscribe",
+    conversation_id: conversationId,
+  });
+  if (!sent) {
+    lastError.value = "WebSocket is not connected";
+  }
+}
+
+function unsubscribeDialog(conversationId: number): void {
+  socketClient?.send({
+    type: "dialog.unsubscribe",
+    conversation_id: conversationId,
+  });
+  if (subscribedDialogId === conversationId) {
+    subscribedDialogId = null;
+  }
+}
+
+function markRead(conversationId: number, lastReadMessageId?: number): void {
+  const payload: Record<string, unknown> = {
+    type: "dialog.mark_read",
+    conversation_id: conversationId,
+  };
+  if (lastReadMessageId !== undefined) {
+    payload.last_read_message_id = lastReadMessageId;
+  }
+  socketClient?.send(payload);
+}
 
 export function useChatSocket() {
   const auth = useAuthStore();
 
   function ensureClient(): SocketClient {
     if (!socketClient) {
-      socketClient = createSocketClient();
+      socketClient = createSocketClient({ autoReconnect: true });
+
+      socketClient.onStateChange((state) => {
+        connectionState.value = state;
+      });
+
       socketClient.onOpen(() => {
-        isConnected.value = true;
         lastError.value = null;
+        if (socketClient) {
+          startHeartbeat(socketClient);
+        }
       });
+
       socketClient.onClose(() => {
-        isConnected.value = false;
+        stopHeartbeat();
       });
+
+      socketClient.onReconnectAttempt((attempt) => {
+        reconnectAttempt.value = attempt;
+        lastError.value = `Reconnecting (${attempt})...`;
+      });
+
+      socketClient.onReconnectSuccess(async () => {
+        reconnectAttempt.value = 0;
+        try {
+          await resyncAfterReconnect();
+        } catch {
+          lastError.value = "Failed to resync after reconnect";
+        }
+      });
+
+      socketClient.onReconnectFailed(() => {
+        lastError.value = "Unable to reconnect to chat server";
+      });
+
       socketClient.onError(() => {
-        lastError.value = "WebSocket connection error";
+        if (connectionState.value !== "reconnecting") {
+          lastError.value = "WebSocket connection error";
+        }
       });
+
       socketClient.onMessage((data) => {
         handleServerEvent(data as unknown as WsServerEvent);
       });
@@ -84,35 +197,13 @@ export function useChatSocket() {
   }
 
   function disconnect(): void {
+    stopHeartbeat();
     if (subscribedDialogId !== null) {
       unsubscribeDialog(subscribedDialogId);
     }
     socketClient?.disconnect();
-    isConnected.value = false;
-  }
-
-  function subscribeDialog(conversationId: number): void {
-    if (subscribedDialogId !== null && subscribedDialogId !== conversationId) {
-      unsubscribeDialog(subscribedDialogId);
-    }
-    subscribedDialogId = conversationId;
-    const sent = ensureClient().send({
-      type: "dialog.subscribe",
-      conversation_id: conversationId,
-    });
-    if (!sent) {
-      lastError.value = "WebSocket is not connected";
-    }
-  }
-
-  function unsubscribeDialog(conversationId: number): void {
-    ensureClient().send({
-      type: "dialog.unsubscribe",
-      conversation_id: conversationId,
-    });
-    if (subscribedDialogId === conversationId) {
-      subscribedDialogId = null;
-    }
+    connectionState.value = "closed";
+    reconnectAttempt.value = 0;
   }
 
   function sendMessage(payload: SendMessagePayload): boolean {
@@ -126,15 +217,8 @@ export function useChatSocket() {
     return sent;
   }
 
-  function markRead(conversationId: number, lastReadMessageId?: number): void {
-    const payload: Record<string, unknown> = {
-      type: "dialog.mark_read",
-      conversation_id: conversationId,
-    };
-    if (lastReadMessageId !== undefined) {
-      payload.last_read_message_id = lastReadMessageId;
-    }
-    ensureClient().send(payload);
+  async function forceResync(): Promise<void> {
+    await resyncAfterReconnect();
   }
 
   return {
@@ -144,7 +228,11 @@ export function useChatSocket() {
     unsubscribeDialog,
     sendMessage,
     markRead,
-    isConnected: computed(() => isConnected.value),
+    forceResync,
+    isConnected: computed(() => connectionState.value === "connected"),
+    connectionState: computed(() => connectionState.value),
+    connectionLabel: computed(() => connectionStateLabel(connectionState.value)),
+    reconnectAttempt: computed(() => reconnectAttempt.value),
     lastError: computed(() => lastError.value),
   };
 }

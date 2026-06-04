@@ -15,7 +15,10 @@ const emit = defineEmits<{
 <template>
   <div class="dialog-list">
     <h2 class="dialog-list__title">Conversations</h2>
-    <div v-if="!conversations.length" class="dialog-list__empty">No conversations</div>
+    <div v-if="!conversations.length" class="dialog-list__empty">
+      <p>No conversations assigned</p>
+      <span>Your inbox will appear here once conversations are available.</span>
+    </div>
     <DialogListItem
       v-for="conversation in conversations"
       :key="conversation.id"
@@ -30,19 +33,32 @@ const emit = defineEmits<{
 .dialog-list {
   height: 100%;
   overflow-y: auto;
-  border-right: 1px solid #ddd;
   background: #fafafa;
 }
 
 .dialog-list__title {
   margin: 0;
-  padding: 1rem;
-  font-size: 1rem;
-  border-bottom: 1px solid #eee;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
 }
 
 .dialog-list__empty {
-  padding: 1rem;
-  color: #666;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.dialog-list__empty p {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.dialog-list__empty span {
+  font-size: 0.85rem;
 }
 </style>

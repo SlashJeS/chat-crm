@@ -6,7 +6,7 @@ import {
   conversationRead,
 } from "@/api/endpoints";
 import { http } from "@/api/http";
-import type { Conversation } from "@/types/conversations";
+import type { Conversation, ConversationReadState } from "@/types/conversations";
 
 export const useConversationsStore = defineStore("conversations", () => {
   const conversationsById = ref<Record<number, Conversation>>({});
@@ -60,6 +60,21 @@ export const useConversationsStore = defineStore("conversations", () => {
     }
   }
 
+  async function refreshConversations(): Promise<void> {
+    const activeId = activeConversationId.value;
+    error.value = null;
+    try {
+      const { data } = await http.get<Conversation[]>(CONVERSATIONS);
+      conversationsById.value = {};
+      conversationIds.value = [];
+      data.forEach((conversation) => upsertConversation(conversation));
+      activeConversationId.value = activeId;
+    } catch {
+      error.value = "Failed to refresh conversations";
+      throw new Error(error.value);
+    }
+  }
+
   function setActiveConversation(id: number | null): void {
     activeConversationId.value = id;
   }
@@ -93,6 +108,13 @@ export const useConversationsStore = defineStore("conversations", () => {
     }
   }
 
+  function applyReadStateUpdated(
+    conversationId: number,
+    readState: ConversationReadState,
+  ): void {
+    applyReadState(conversationId, readState.unread_count);
+  }
+
   function clear(): void {
     conversationsById.value = {};
     conversationIds.value = [];
@@ -110,11 +132,13 @@ export const useConversationsStore = defineStore("conversations", () => {
     conversations,
     activeConversation,
     loadConversations,
+    refreshConversations,
     setActiveConversation,
     upsertConversation,
     applyConversationUpdated,
     markConversationRead,
     applyReadState,
+    applyReadStateUpdated,
     clear,
   };
 });

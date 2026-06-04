@@ -34,6 +34,12 @@ cp .env.example .env
 docker compose up --build
 ```
 
+On first run, seed demo data:
+
+```bash
+docker compose exec backend python manage.py seed_demo
+```
+
 3. Open the app:
 
 | Service | URL |
@@ -49,6 +55,24 @@ Services started by Compose:
 - **redis** — Redis 7 on port 6379
 - **backend** — Django ASGI via Daphne on port 8000
 - **frontend** — Vite dev server on port 5173
+
+The backend container runs migrations on startup, then starts Daphne. Shell scripts use LF line endings (see `.gitattributes`) so Docker on Windows works correctly.
+
+## Integration smoke test
+
+Automated API + WebSocket checks (requires running stack):
+
+```bash
+pip install requests websocket-client
+python scripts/integration_smoke_test.py
+```
+
+When using the project virtualenv:
+
+```bash
+backend/.venv/Scripts/pip install requests websocket-client   # Windows
+backend/.venv/Scripts/python scripts/integration_smoke_test.py
+```
 
 ## Test accounts
 

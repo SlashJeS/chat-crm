@@ -13,6 +13,9 @@ def get_redis_client():
         _redis_client = redis.from_url(
             os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            health_check_interval=30,
         )
     return _redis_client
 

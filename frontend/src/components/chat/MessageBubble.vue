@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Message } from "@/types/messages";
+import { formatDateTime, formatRelativeTime } from "@/utils/date";
 
 defineProps<{
   message: Message;
@@ -17,12 +18,22 @@ defineProps<{
     }"
   >
     <div class="message-bubble__meta">
-      <span>{{ message.sender_type }}</span>
+      <span class="message-bubble__sender">
+        {{ message.sender_type === "FAN" ? "Fan" : "You" }}
+      </span>
+      <span
+        class="message-bubble__time"
+        :title="formatDateTime(message.created_at)"
+      >
+        {{ formatRelativeTime(message.created_at) }}
+      </span>
       <span v-if="message.message_type === 'PPV'" class="message-bubble__ppv">
         PPV ${{ message.ppv_price }}
       </span>
       <span v-if="message.local_status === 'pending'" class="message-bubble__status">Sending...</span>
-      <span v-if="message.local_status === 'failed'" class="message-bubble__status">Failed</span>
+      <span v-if="message.local_status === 'failed'" class="message-bubble__status message-bubble__status--failed">
+        Failed to send
+      </span>
     </div>
     <div class="message-bubble__text">{{ message.text }}</div>
   </div>
@@ -30,36 +41,50 @@ defineProps<{
 
 <style scoped>
 .message-bubble {
-  max-width: 75%;
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.75rem;
-  margin-bottom: 0.5rem;
+  max-width: 78%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.85rem;
+  margin-bottom: 0.65rem;
 }
 
 .message-bubble--fan {
   align-self: flex-start;
-  background: #f1f3f5;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .message-bubble--chatter {
   align-self: flex-end;
   background: #dbeafe;
+  border: 1px solid #bfdbfe;
 }
 
 .message-bubble--pending {
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .message-bubble--failed {
   background: #fdecea;
+  border-color: #f5c2c0;
 }
 
 .message-bubble__meta {
   display: flex;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: #666;
-  margin-bottom: 0.25rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 0.3rem;
+}
+
+.message-bubble__sender {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.message-bubble__time {
+  color: #94a3b8;
 }
 
 .message-bubble__ppv {
@@ -68,12 +93,20 @@ defineProps<{
 }
 
 .message-bubble__status {
-  color: #666;
+  color: #64748b;
   font-style: italic;
+}
+
+.message-bubble__status--failed {
+  color: #c0392b;
+  font-weight: 600;
+  font-style: normal;
 }
 
 .message-bubble__text {
   white-space: pre-wrap;
   word-break: break-word;
+  line-height: 1.45;
+  font-size: 0.95rem;
 }
 </style>

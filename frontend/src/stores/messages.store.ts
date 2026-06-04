@@ -7,9 +7,40 @@ import type { MessagesPageResponse } from "@/types/conversations";
 import type { Message } from "@/types/messages";
 
 function sortMessages(messages: Message[]): Message[] {
-  return [...messages].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  );
+  return [...messages].sort((a, b) => {
+    if (a.id > 0 && b.id > 0 && a.id !== b.id) {
+      return a.id - b.id;
+    }
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+}
+
+function dedupeMessages(messages: Message[]): Message[] {
+  const byId = new Map<number, Message>();
+  const pending: Message[] = [];
+
+  for (const message of messages) {
+    if (message.id > 0) {
+      byId.set(message.id, message);
+      continue;
+    }
+    pending.push(message);
+  }
+
+  const merged = [...byId.values()];
+  for (const message of pending) {
+    const exists = merged.some(
+      (item) =>
+        item.client_message_id &&
+        message.client_message_id &&
+        item.client_message_id === message.client_message_id,
+    );
+    if (!exists) {
+      merged.push(message);
+    }
+  }
+
+  return sortMessages(merged);
 }
 
 export const useMessagesStore = defineStore("messages", () => {
@@ -23,6 +54,14 @@ export const useMessagesStore = defineStore("messages", () => {
     return messagesByConversationId.value[conversationId] ?? [];
   }
 
+  function getLatestMessageId(conversationId: number): number | null {
+    const serverMessages = getMessages(conversationId).filter((message) => message.id > 0);
+    if (!serverMessages.length) {
+      return null;
+    }
+    return serverMessages[serverMessages.length - 1].id;
+  }
+
   function upsertMessage(message: Message): void {
     const conversationId = message.conversation;
     const current = [...(messagesByConversationId.value[conversationId] ?? [])];
@@ -31,25 +70,29 @@ export const useMessagesStore = defineStore("messages", () => {
       delete pendingByClientId.value[message.client_message_id];
     }
 
-    const index = current.findIndex(
-      (item) =>
-        item.id === message.id ||
-        (message.client_message_id &&
-          item.client_message_id === message.client_message_id),
-    );
-
     const normalized: Message = {
       ...message,
-      local_status: message.local_status ?? "sent",
+      local_status:
+        message.local_status ??
+        (message.id > 0 ? "sent" : message.local_status),
     };
 
-    if (index >= 0) {
-      current[index] = normalized;
-    } else {
-      current.push(normalized);
-    }
+    const withoutDuplicate = current.filter((item) => {
+      if (normalized.id > 0 && item.id === normalized.id) {
+        return false;
+      }
+      if (
+        normalized.client_message_id &&
+        item.client_message_id === normalized.client_message_id &&
+        item.id !== normalized.id
+      ) {
+        return false;
+      }
+      return true;
+    });
 
-    messagesByConversationId.value[conversationId] = sortMessages(current);
+    withoutDuplicate.push(normalized);
+    messagesByConversationId.value[conversationId] = dedupeMessages(withoutDuplicate);
   }
 
   function addPendingMessage(_conversationId: number, message: Message): void {
@@ -90,7 +133,11 @@ export const useMessagesStore = defineStore("messages", () => {
         conversationMessages(conversationId),
         { params: { limit: 30 } },
       );
-      messagesByConversationId.value[conversationId] = sortMessages(data.results);
+      const pending = getMessages(conversationId).filter((message) => message.id < 0);
+      messagesByConversationId.value[conversationId] = dedupeMessages([
+        ...data.results,
+        ...pending,
+      ]);
       hasMoreByConversationId.value[conversationId] = data.has_more;
     } catch {
       errorByConversationId.value[conversationId] = "Failed to load messages";
@@ -106,7 +153,11 @@ export const useMessagesStore = defineStore("messages", () => {
       return;
     }
 
-    const oldestId = current[0].id;
+    const oldestId = current.find((message) => message.id > 0)?.id;
+    if (!oldestId) {
+      return;
+    }
+
     loadingByConversationId.value[conversationId] = true;
     errorByConversationId.value[conversationId] = null;
     try {
@@ -114,11 +165,10 @@ export const useMessagesStore = defineStore("messages", () => {
         conversationMessages(conversationId),
         { params: { limit: 30, before_id: oldestId } },
       );
-      const merged = sortMessages([...data.results, ...current]);
-      const deduped = merged.filter(
-        (message, index, array) => array.findIndex((item) => item.id === message.id) === index,
-      );
-      messagesByConversationId.value[conversationId] = deduped;
+      messagesByConversationId.value[conversationId] = dedupeMessages([
+        ...data.results,
+        ...current,
+      ]);
       hasMoreByConversationId.value[conversationId] = data.has_more;
     } catch {
       errorByConversationId.value[conversationId] = "Failed to load older messages";
@@ -129,12 +179,15 @@ export const useMessagesStore = defineStore("messages", () => {
 
   async function loadMissedMessages(conversationId: number, afterId: number): Promise<void> {
     loadingByConversationId.value[conversationId] = true;
+    errorByConversationId.value[conversationId] = null;
     try {
       const { data } = await http.get<MessagesPageResponse>(
         conversationMessages(conversationId),
-        { params: { limit: 30, after_id: afterId } },
+        { params: { limit: 100, after_id: afterId } },
       );
       data.results.forEach((message) => upsertMessage(message));
+    } catch {
+      errorByConversationId.value[conversationId] = "Failed to sync missed messages";
     } finally {
       loadingByConversationId.value[conversationId] = false;
     }
@@ -162,6 +215,7 @@ export const useMessagesStore = defineStore("messages", () => {
     errorByConversationId,
     pendingByClientId,
     getMessages,
+    getLatestMessageId,
     loadInitialMessages,
     loadOlderMessages,
     loadMissedMessages,

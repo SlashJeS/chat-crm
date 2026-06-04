@@ -1,5 +1,6 @@
 import type { Conversation, ConversationReadState } from "@/types/conversations";
 import type { Message } from "@/types/messages";
+import type { MonitorSnapshot } from "@/types/monitor";
 
 export interface WsConnectionAcceptedEvent {
   type: "connection.accepted";
@@ -48,6 +49,11 @@ export interface WsErrorEvent {
   message: string;
 }
 
+export interface WsMonitorSnapshotEvent {
+  type: "monitor.snapshot";
+  snapshot: MonitorSnapshot;
+}
+
 export type WsServerEvent =
   | WsConnectionAcceptedEvent
   | WsDialogSubscribedEvent
@@ -57,6 +63,7 @@ export type WsServerEvent =
   | WsMessageCreatedEvent
   | WsConversationUpdatedEvent
   | WsReadStateUpdatedEvent
+  | WsMonitorSnapshotEvent
   | WsErrorEvent;
 
 export interface WebSocketEvent<T = unknown> {

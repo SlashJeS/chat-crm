@@ -55,16 +55,87 @@ The `/chatter` route provides a functional workspace:
 ws://localhost:8000/ws/chat/?token=<access_token>
 ```
 
-Client events: `dialog.subscribe`, `dialog.unsubscribe`, `message.send`, `dialog.mark_read`
+Client events: `dialog.subscribe`, `dialog.unsubscribe`, `message.send`, `dialog.mark_read`, `presence.heartbeat`
 
 Server events: `message.created`, `conversation.updated`, `conversation.read_state.updated`
 
-### Local testing
+## Teamlead monitor
 
-1. Start backend, Redis, Postgres and seed demo data.
-2. Login as `chatter1 / password123`.
-3. Open `/chatter`.
-4. Select a conversation, send messages, send PPV, simulate fan message.
+The `/teamlead` route provides a live monitor dashboard:
+
+- Initial load via REST snapshot
+- Live updates via monitor WebSocket
+- Summary cards for online chatters, active/waiting/overdue counts, SLA
+- Table with per-chatter status and warning row highlighting
+
+### REST endpoint used
+
+- `GET /api/monitor/snapshot/`
+
+### WebSocket endpoint
+
+```
+ws://localhost:8000/ws/monitor/?token=<access_token>
+```
+
+Client events: `monitor.refresh`
+
+Server events: `monitor.snapshot`, `error`
+
+## Reconnect and resync behavior
+
+WebSocket connections are live events only. After a disconnect, the frontend reconnects automatically and uses REST to recover missed state.
+
+### WebSocket auto reconnect
+
+Both chat and monitor sockets use a shared `SocketClient` with:
+
+- connection states: `idle`, `connecting`, `connected`, `disconnected`, `reconnecting`, `closed`
+- exponential backoff from 500ms to 5000ms with optional jitter
+- manual `disconnect()` stops reconnect attempts
+- unexpected close triggers reconnect when `autoReconnect` is enabled
+
+### REST resync after reconnect
+
+**Chat socket**
+
+1. Refresh conversation list via `GET /api/conversations/`
+2. If an active conversation is selected:
+   - read latest local server message id
+   - load missed messages via `GET /api/conversations/{id}/messages/?after_id=<id>`
+   - resubscribe to the active dialog
+   - mark conversation read when needed
+
+**Monitor socket**
+
+1. Reload monitor snapshot via `GET /api/monitor/snapshot/`
+2. Send `monitor.refresh` over WebSocket
+
+There is no polling. Periodic monitor snapshots from the backend continue while connected.
+
+### Message dedupe
+
+- Incoming server messages are deduplicated by `message.id`
+- Pending outgoing messages are matched to confirmed server messages by `client_message_id`
+- Pending messages are not duplicated when the server confirms them
+
+### Heartbeat for presence
+
+While the chat socket is connected, the frontend sends:
+
+```json
+{ "type": "presence.heartbeat" }
+```
+
+every 5 seconds (default interval). Heartbeat stops on disconnect or unmount and resumes after reconnect.
+
+### Manual test
+
+1. Login as `lead / password123` and open `/teamlead`.
+2. Login as `chatter1 / password123` in another browser and open `/chatter`.
+3. Monitor should show `chatter1` as online.
+4. Use **Simulate fan message** in the chatter workspace.
+5. Monitor waiting/overdue counts should update via WebSocket.
 
 ## Development
 
