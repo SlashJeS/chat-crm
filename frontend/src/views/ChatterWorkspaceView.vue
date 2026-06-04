@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 
 import ChatWindow from "@/components/chat/ChatWindow.vue";
 import DialogList from "@/components/chat/DialogList.vue";
@@ -69,6 +69,16 @@ onMounted(async () => {
   await conversationsStore.loadConversations();
   chatSocket.connect();
 });
+
+watch(
+  () => chatSocket.isConnected.value,
+  (connected) => {
+    const conversationId = conversationsStore.activeConversationId;
+    if (connected && conversationId !== null) {
+      chatSocket.subscribeDialog(conversationId);
+    }
+  },
+);
 
 onUnmounted(() => {
   if (previousConversationId !== null) {

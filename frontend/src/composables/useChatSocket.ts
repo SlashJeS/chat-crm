@@ -18,6 +18,7 @@ const HEARTBEAT_INTERVAL_MS = 5000;
 
 let socketClient: SocketClient | null = null;
 let subscribedDialogId: number | null = null;
+let pendingSubscribeDialogId: number | null = null;
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
 const connectionState = ref<ConnectionState>("idle");
@@ -104,12 +105,20 @@ function subscribeDialog(conversationId: number): void {
   if (subscribedDialogId !== null && subscribedDialogId !== conversationId) {
     unsubscribeDialog(subscribedDialogId);
   }
+
+  if (!socketClient?.connected) {
+    pendingSubscribeDialogId = conversationId;
+    return;
+  }
+
+  pendingSubscribeDialogId = null;
   subscribedDialogId = conversationId;
-  const sent = socketClient?.send({
+  const sent = socketClient.send({
     type: "dialog.subscribe",
     conversation_id: conversationId,
   });
   if (!sent) {
+    pendingSubscribeDialogId = conversationId;
     lastError.value = "WebSocket is not connected";
   }
 }
@@ -150,6 +159,11 @@ export function useChatSocket() {
         lastError.value = null;
         if (socketClient) {
           startHeartbeat(socketClient);
+        }
+        if (pendingSubscribeDialogId !== null) {
+          const conversationId = pendingSubscribeDialogId;
+          pendingSubscribeDialogId = null;
+          subscribeDialog(conversationId);
         }
       });
 

@@ -502,7 +502,7 @@ Backend entrypoint runs migrate, collectstatic, and auto-seed on first start.
 
 
 
-Configure host nginx: `/` → `:3000`, `/api/` `/ws/` `/admin/` `/static/` → `:8000`.
+Configure host nginx: `/` → `:3000`, `/api/` `/ws/` `/admin/` `/static/` → `:8000`. See [docs/deploy-nginx.example.conf](docs/deploy-nginx.example.conf) for WebSocket `map` block (required).
 
 
 

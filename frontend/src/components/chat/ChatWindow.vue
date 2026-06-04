@@ -10,6 +10,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useMessagesStore } from "@/stores/messages.store";
 import type { Conversation } from "@/types/conversations";
 import type { Message, SendMessagePayload } from "@/types/messages";
+import { createClientMessageId } from "@/utils/client-id";
 import { getInitials } from "@/utils/initials";
 
 const props = defineProps<{
@@ -48,7 +49,7 @@ function buildPendingMessage(
   messageType: "TEXT" | "PPV",
   ppvPrice: string | null,
 ): { payload: SendMessagePayload; pending: Message } {
-  const clientMessageId = crypto.randomUUID();
+  const clientMessageId = createClientMessageId();
   const conversationId = props.conversation!.id;
   const payload: SendMessagePayload = {
     type: "message.send",
