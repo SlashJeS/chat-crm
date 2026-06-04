@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 
 import { ACCESS_TOKEN_KEY } from "@/api/http";
+import { WS_BASE_URL } from "@/config/env";
 import { useAuthStore } from "@/stores/auth.store";
 import { useConversationsStore } from "@/stores/conversations.store";
 import { useMessagesStore } from "@/stores/messages.store";
@@ -13,7 +14,6 @@ import {
   type SocketClient,
 } from "@/websocket/socket";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000";
 const HEARTBEAT_INTERVAL_MS = 5000;
 
 let socketClient: SocketClient | null = null;

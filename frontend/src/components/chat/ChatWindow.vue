@@ -1,20 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import AppLogo from "@/components/common/AppLogo.vue";
 import MessageInput from "@/components/chat/MessageInput.vue";
 import MessageList from "@/components/chat/MessageList.vue";
-import PPVModal from "@/components/chat/PPVModal.vue";
 import OverdueBadge from "@/components/monitor/OverdueBadge.vue";
-import { DEV_SIMULATE_FAN_MESSAGE } from "@/api/endpoints";
-import { http } from "@/api/http";
+import { DEFAULT_PPV_PRICE, DEFAULT_PPV_TEXT } from "@/constants/messages";
 import { useAuthStore } from "@/stores/auth.store";
 import { useMessagesStore } from "@/stores/messages.store";
 import type { Conversation } from "@/types/conversations";
 import type { Message, SendMessagePayload } from "@/types/messages";
 import { getInitials } from "@/utils/initials";
-import { getConnectionTone, getRealtimeConnectionLabel } from "@/utils/status";
-import type { ConnectionState } from "@/websocket/socket";
 
 const props = defineProps<{
   conversation: Conversation | null;
@@ -23,8 +19,6 @@ const props = defineProps<{
   loadingMessages: boolean;
   messagesError?: string | null;
   isConnected: boolean;
-  connectionLabel: string;
-  connectionState: ConnectionState;
   socketError: string | null;
 }>();
 
@@ -32,14 +26,10 @@ const emit = defineEmits<{
   sendMessage: [payload: SendMessagePayload];
   loadOlder: [];
   retryMessages: [];
-  simulateFanMessage: [];
 }>();
 
 const auth = useAuthStore();
 const messagesStore = useMessagesStore();
-const ppvOpen = ref(false);
-const simulateError = ref<string | null>(null);
-const simulateLoading = ref(false);
 
 const fanInitials = computed(() =>
   props.conversation ? getInitials(props.conversation.fan.display_name) : "",
@@ -49,11 +39,9 @@ const isWaiting = computed(
   () => props.conversation?.waiting_since !== null && props.conversation?.waiting_since !== undefined,
 );
 
-const statusClass = computed(() =>
-  `status-pill--${getConnectionTone(props.connectionState, Boolean(props.socketError))}`,
-);
+const canSendPpv = computed(() => Boolean(props.conversation) && props.isConnected);
 
-const realtimeLabel = computed(() => getRealtimeConnectionLabel(props.connectionState));
+const ppvButtonLabel = computed(() => "Send pricelist");
 
 function buildPendingMessage(
   text: string,
@@ -100,36 +88,17 @@ function handleSendText(text: string): void {
   emit("sendMessage", payload);
 }
 
-function handleSendPpv(payload: { text: string; ppvPrice: string }): void {
-  if (!props.conversation) {
+function handleSendPpvQuick(): void {
+  if (!canSendPpv.value || !props.conversation) {
     return;
   }
-  const { payload: wsPayload, pending } = buildPendingMessage(
-    payload.text,
+  const { payload, pending } = buildPendingMessage(
+    DEFAULT_PPV_TEXT,
     "PPV",
-    payload.ppvPrice,
+    DEFAULT_PPV_PRICE,
   );
   messagesStore.addPendingMessage(props.conversation.id, pending);
-  emit("sendMessage", wsPayload);
-}
-
-async function handleSimulateFanMessage(): Promise<void> {
-  if (!props.conversation) {
-    return;
-  }
-  simulateLoading.value = true;
-  simulateError.value = null;
-  try {
-    await http.post(DEV_SIMULATE_FAN_MESSAGE, {
-      conversation_id: props.conversation.id,
-      text: "Hello from simulated fan",
-    });
-    emit("simulateFanMessage");
-  } catch {
-    simulateError.value = "Failed to simulate fan message";
-  } finally {
-    simulateLoading.value = false;
-  }
+  emit("sendMessage", payload);
 }
 </script>
 
@@ -150,10 +119,6 @@ async function handleSimulateFanMessage(): Promise<void> {
               <span v-if="conversation.unread_count > 0" class="badge badge-success">
                 {{ conversation.unread_count }} unread
               </span>
-              <span class="status-pill chat-window__status" :class="statusClass">
-                <span class="status-dot" aria-hidden="true" />
-                {{ realtimeLabel }}
-              </span>
             </div>
           </div>
         </div>
@@ -161,21 +126,12 @@ async function handleSimulateFanMessage(): Promise<void> {
           <button
             type="button"
             class="btn btn-secondary"
-            aria-label="Send paid PPV message"
-            @click="ppvOpen = true"
+            :disabled="!canSendPpv"
+            :aria-label="ppvButtonLabel"
+            :title="canSendPpv ? 'Sends the standard price list as a $9.99 PPV unlock' : 'Messaging unavailable while disconnected'"
+            @click="handleSendPpvQuick"
           >
-            Send PPV
-          </button>
-          <button
-            type="button"
-            class="chat-window__demo"
-            :disabled="simulateLoading"
-            aria-label="Simulate incoming fan message for demo"
-            title="Dev-only: simulates an incoming fan message via REST"
-            @click="handleSimulateFanMessage"
-          >
-            <span class="chat-window__demo-tag">Demo</span>
-            {{ simulateLoading ? "Simulating…" : "Simulate fan message" }}
+            {{ ppvButtonLabel }}
           </button>
         </div>
       </header>
@@ -193,15 +149,6 @@ async function handleSimulateFanMessage(): Promise<void> {
         :disabled="!isConnected"
         :socket-error="socketError"
         @send="handleSendText"
-      />
-
-      <p v-if="simulateError" class="chat-window__error" role="alert">{{ simulateError }}</p>
-
-      <PPVModal
-        :open="ppvOpen"
-        :disabled="!isConnected"
-        @close="ppvOpen = false"
-        @send="handleSendPpv"
       />
     </template>
 
@@ -276,10 +223,6 @@ async function handleSimulateFanMessage(): Promise<void> {
   flex-wrap: wrap;
 }
 
-.chat-window__status {
-  font-size: 0.72rem;
-}
-
 .chat-window__actions {
   display: flex;
   align-items: center;
@@ -287,42 +230,6 @@ async function handleSimulateFanMessage(): Promise<void> {
   flex-wrap: wrap;
   justify-content: flex-end;
   flex-shrink: 0;
-}
-
-.chat-window__demo {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0.35rem 0.6rem;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.chat-window__demo:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-warning);
-  color: var(--color-text);
-}
-
-.chat-window__demo:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.chat-window__demo-tag {
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .chat-window__placeholder {
@@ -337,13 +244,6 @@ async function handleSimulateFanMessage(): Promise<void> {
 .chat-window__placeholder-card {
   max-width: 22rem;
   padding: var(--space-5);
-}
-
-.chat-window__error {
-  margin: 0;
-  padding: 0 var(--space-4) var(--space-3);
-  color: var(--color-danger);
-  font-size: 0.85rem;
 }
 
 @media (max-width: 640px) {

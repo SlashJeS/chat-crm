@@ -235,6 +235,11 @@
   color: var(--color-danger);
 }
 
+.btn-sm {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+}
+
 .input,
 .textarea {
   width: 100%;

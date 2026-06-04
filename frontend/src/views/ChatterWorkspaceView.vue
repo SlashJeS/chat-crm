@@ -8,7 +8,6 @@ import { useChatSocket } from "@/composables/useChatSocket";
 import { useConversationsStore } from "@/stores/conversations.store";
 import { useMessagesStore } from "@/stores/messages.store";
 import type { SendMessagePayload } from "@/types/messages";
-import { getConnectionTone, getRealtimeConnectionLabel } from "@/utils/status";
 
 const conversationsStore = useConversationsStore();
 const messagesStore = useMessagesStore();
@@ -23,16 +22,6 @@ const activeMessagesError = computed(() => {
   }
   return messagesStore.errorByConversationId[id] ?? null;
 });
-
-const conversationCount = computed(() => conversationsStore.conversations.length);
-
-const overdueCount = computed(
-  () => conversationsStore.conversations.filter((c) => c.is_overdue).length,
-);
-
-const connectionPillClass = computed(() =>
-  `status-pill--${getConnectionTone(chatSocket.connectionState.value, Boolean(chatSocket.lastError.value))}`,
-);
 
 async function activateConversation(conversationId: number): Promise<void> {
   conversationsStore.setActiveConversation(conversationId);
@@ -94,21 +83,6 @@ onUnmounted(() => {
 <template>
   <AppLayout>
     <div class="workspace-page page">
-      <header class="workspace-page__header page-header">
-        <div>
-          <h1 class="page-title">Chatter Workspace</h1>
-          <p class="page-subtitle">Manage active fan dialogs in realtime</p>
-        </div>
-        <div class="workspace-page__stats toolbar">
-          <span class="status-pill" :class="connectionPillClass">
-            <span class="status-dot" aria-hidden="true" />
-            {{ getRealtimeConnectionLabel(chatSocket.connectionState.value) }}
-          </span>
-          <span class="badge badge-muted">{{ conversationCount }} active dialogs</span>
-          <span v-if="overdueCount > 0" class="badge badge-danger">{{ overdueCount }} overdue</span>
-        </div>
-      </header>
-
       <div class="workspace">
         <aside class="workspace__sidebar panel">
           <DialogList
@@ -140,8 +114,6 @@ onUnmounted(() => {
             "
             :messages-error="activeMessagesError"
             :is-connected="chatSocket.isConnected.value"
-            :connection-label="chatSocket.connectionLabel.value"
-            :connection-state="chatSocket.connectionState.value"
             :socket-error="chatSocket.lastError.value"
             @send-message="handleSendMessage"
             @load-older="handleLoadOlder"
@@ -166,12 +138,6 @@ onUnmounted(() => {
   .workspace-page {
     overflow: hidden;
   }
-}
-
-.workspace-page__header {
-  flex: 0 0 auto;
-  padding-bottom: 0;
-  gap: var(--space-3);
 }
 
 .workspace {
@@ -203,10 +169,6 @@ onUnmounted(() => {
   }
 }
 
-.workspace-page__stats {
-  flex-wrap: wrap;
-}
-
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -225,9 +187,4 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 600px) {
-  .workspace-page__header {
-    flex-direction: column;
-  }
-}
 </style>

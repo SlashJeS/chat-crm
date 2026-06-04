@@ -3,7 +3,9 @@ import { createRouter, createWebHistory } from "vue-router";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/api/http";
 import { useAuthStore } from "@/stores/auth.store";
 import type { UserRole } from "@/types/auth";
+import AdminUsersView from "@/views/AdminUsersView.vue";
 import ChatterWorkspaceView from "@/views/ChatterWorkspaceView.vue";
+import InviteRegistrationView from "@/views/InviteRegistrationView.vue";
 import LeadDialogsView from "@/views/LeadDialogsView.vue";
 import LoginView from "@/views/LoginView.vue";
 import TeamleadMonitorView from "@/views/TeamleadMonitorView.vue";
@@ -36,6 +38,12 @@ const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: "/invite/:token",
+      name: "invite-registration",
+      component: InviteRegistrationView,
+      meta: { public: true },
+    },
+    {
       path: "/chatter",
       name: "chatter",
       component: ChatterWorkspaceView,
@@ -52,6 +60,12 @@ const router = createRouter({
       name: "lead-dialogs",
       component: LeadDialogsView,
       meta: { requiresAuth: true, roles: ["TEAMLEAD", "ADMIN"] as UserRole[] },
+    },
+    {
+      path: "/admin/users",
+      name: "admin-users",
+      component: AdminUsersView,
+      meta: { requiresAuth: true, roles: ["ADMIN"] as UserRole[] },
     },
   ],
 });

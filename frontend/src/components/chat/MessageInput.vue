@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import AppIcon from "@/components/common/AppIcon.vue";
 const props = defineProps<{
   disabled?: boolean;
   socketError?: string | null;

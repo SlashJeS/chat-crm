@@ -103,7 +103,7 @@ onMounted(async () => {
 
     <div v-else-if="!messages.length" class="message-list__empty empty-state">
       <p class="empty-state__title">No messages yet</p>
-      <span class="empty-state__text">Send a message or simulate a fan reply to start the dialog.</span>
+      <span class="empty-state__text">Send a message to start the dialog.</span>
     </div>
 
     <template v-else>

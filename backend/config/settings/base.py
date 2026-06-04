@@ -1,22 +1,25 @@
-import os
 from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
 
-load_dotenv()
+from config.settings.env import (
+    get_bool_env,
+    get_env,
+    get_int_env,
+    get_list_env,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = BASE_DIR.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me")
+load_dotenv(REPO_ROOT / ".env")
+if not Path("/.dockerenv").exists():
+    load_dotenv(BASE_DIR / ".env", override=True)
 
-DEBUG = os.getenv("DJANGO_DEBUG", "0") in ("1", "true", "True", "yes")
-
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
+SECRET_KEY = get_env("DJANGO_SECRET_KEY")
+DEBUG = get_bool_env("DJANGO_DEBUG")
+ALLOWED_HOSTS = get_list_env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -72,12 +75,12 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgres://crm:crm@localhost:5432/crm",
+        default=get_env("DATABASE_URL"),
         conn_max_age=600,
     )
 }
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+REDIS_URL = get_env("REDIS_URL")
 
 CHANNEL_LAYERS = {
     "default": {
@@ -110,16 +113,15 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
-    if origin.strip()
-]
+CORS_ALLOWED_ORIGINS = get_list_env("CORS_ALLOWED_ORIGINS")
 
-RESPONSE_SLA_SECONDS = int(os.getenv("RESPONSE_SLA_SECONDS", "60"))
-PRESENCE_HEARTBEAT_INTERVAL_SECONDS = int(os.getenv("PRESENCE_HEARTBEAT_INTERVAL_SECONDS", "5"))
-PRESENCE_GRACE_SECONDS = int(os.getenv("PRESENCE_GRACE_SECONDS", "15"))
-MONITOR_REFRESH_SECONDS = int(os.getenv("MONITOR_REFRESH_SECONDS", "5"))
+RESPONSE_SLA_SECONDS = get_int_env("RESPONSE_SLA_SECONDS")
+PRESENCE_HEARTBEAT_INTERVAL_SECONDS = get_int_env("PRESENCE_HEARTBEAT_INTERVAL_SECONDS")
+PRESENCE_GRACE_SECONDS = get_int_env("PRESENCE_GRACE_SECONDS")
+MONITOR_REFRESH_SECONDS = get_int_env("MONITOR_REFRESH_SECONDS")
+FRONTEND_BASE_URL = get_env("FRONTEND_BASE_URL")
+
+DEMO_ACTIVITY_ENABLED = get_bool_env("DEMO_ACTIVITY_ENABLED")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

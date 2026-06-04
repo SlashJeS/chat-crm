@@ -38,6 +38,25 @@ Toggle light/dark from the app header or login page. If no preference is saved, 
 
 All surfaces use shared tokens and utilities, support dark/light themes, and are responsive from mobile to desktop widths.
 
+## Environment
+
+Required variables are listed in the repo root [.env.example](../.env.example). Copy the root `.env` before running:
+
+```bash
+cp ../.env.example ../.env
+```
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_API_BASE_URL` | REST API base URL (e.g. `http://localhost:8000/api`) |
+| `VITE_WS_BASE_URL` | WebSocket base URL (e.g. `ws://localhost:8000`) |
+
+Vite reads env from the **repository root** (`envDir` in `vite.config.ts`). Missing variables throw at dev/build time via `src/config/env.ts`.
+
+**Docker:** frontend service uses `env_file: .env` — same root file as backend.
+
+**Manual dev:** run `npm run dev` from `frontend/` after creating root `.env`. Optional override: `frontend/.env.local` (gitignored).
+
 ## Routes
 
 | Path | View | Access |
@@ -66,16 +85,17 @@ The `/chatter` route provides a functional workspace:
 - Dialog list sorted by `last_message_at`
 - Message history with scroll-up pagination
 - WebSocket live updates for `message.created` and `conversation.updated`
-- Send TEXT and PPV messages through WebSocket
+- Send TEXT messages through WebSocket
+- Send PPV messages through WebSocket as a one-click **Send pricelist** action (unlocks a predefined price list for $9.99)
 - Mark conversation read when opened
-- Simulate fan message button for local testing
+
+The backend dev endpoint `POST /api/dev/simulate-fan-message/` remains available for manual/API testing but is not exposed in the product UI.
 
 ### REST endpoints used
 
 - `GET /api/conversations/`
 - `GET /api/conversations/{id}/messages/`
 - `POST /api/conversations/{id}/read/`
-- `POST /api/dev/simulate-fan-message/`
 
 ### WebSocket endpoint
 
@@ -181,12 +201,13 @@ every 5 seconds (default interval). Heartbeat stops on disconnect or unmount and
 1. Login as `lead / password123` and open `/teamlead`.
 2. Login as `chatter1 / password123` in another browser and open `/chatter`.
 3. Monitor should show `chatter1` as online.
-4. Use **Simulate fan message** in the chatter workspace.
+4. Simulate a fan message via the REST dev endpoint (see root README) or wait for real fan traffic.
 5. Monitor waiting/overdue counts should update via WebSocket.
 
 ## Development
 
 ```bash
+cp ../.env.example ../.env
 npm install
 npm run dev
 ```
@@ -197,9 +218,11 @@ Other scripts:
 - `npm run preview`
 - `npm run type-check`
 
-## Environment
+## Environment reference
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_API_BASE_URL` | `http://localhost:8000/api` | REST API base URL |
-| `VITE_WS_BASE_URL` | `ws://localhost:8000` | WebSocket base URL |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_BASE_URL` | Yes | REST API base URL |
+| `VITE_WS_BASE_URL` | Yes | WebSocket base URL |
+
+No default URLs are hardcoded in application code.

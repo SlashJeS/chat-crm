@@ -27,5 +27,9 @@ class IsAdminRole(_RolePermission):
     allowed_roles = (UserProfile.Role.ADMIN,)
 
 
+class IsAdminRoleOnly(_RolePermission):
+    allowed_roles = (UserProfile.Role.ADMIN,)
+
+
 class IsTeamleadOrAdmin(_RolePermission):
     allowed_roles = (UserProfile.Role.TEAMLEAD, UserProfile.Role.ADMIN)

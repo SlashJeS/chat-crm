@@ -1,6 +1,7 @@
 import { computed, ref } from "vue";
 
 import { ACCESS_TOKEN_KEY } from "@/api/http";
+import { WS_BASE_URL } from "@/config/env";
 import { useAuthStore } from "@/stores/auth.store";
 import { useMonitorStore } from "@/stores/monitor.store";
 import type { MonitorSnapshot } from "@/types/monitor";
@@ -11,8 +12,6 @@ import {
   type ConnectionState,
   type SocketClient,
 } from "@/websocket/socket";
-
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000";
 
 let socketClient: SocketClient | null = null;
 

@@ -8,8 +8,11 @@ export function getCurrentPageTitle(path: string): string {
   if (path === "/lead/dialogs") {
     return "Dialog Assignment";
   }
-  if (path === "/lead/users") {
-    return "User Management";
+  if (path === "/admin/users") {
+    return "Users";
+  }
+  if (path.startsWith("/invite/")) {
+    return "Create account";
   }
   return "CRM Chatters";
 }

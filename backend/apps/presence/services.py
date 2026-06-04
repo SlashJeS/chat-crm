@@ -1,5 +1,3 @@
-import os
-
 import redis
 from django.conf import settings
 from django.utils import timezone
@@ -11,7 +9,7 @@ def get_redis_client():
     global _redis_client
     if _redis_client is None:
         _redis_client = redis.from_url(
-            os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
+            settings.REDIS_URL,
             decode_responses=True,
             socket_connect_timeout=5,
             socket_timeout=5,

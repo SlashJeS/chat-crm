@@ -6,14 +6,17 @@ import AppIcon from "@/components/common/AppIcon.vue";
 import AppLogo from "@/components/common/AppLogo.vue";
 import ThemeToggle from "@/components/common/ThemeToggle.vue";
 import UserMenu from "@/components/common/UserMenu.vue";
+import { useChatSocket } from "@/composables/useChatSocket";
 import { useAuthStore } from "@/stores/auth.store";
 import { getCurrentPageTitle } from "@/utils/page-title";
+import { getConnectionTone, getRealtimeConnectionLabel } from "@/utils/status";
 
 const SIDEBAR_COLLAPSED_KEY = "crm-sidebar-collapsed";
 const MOBILE_BREAKPOINT = 901;
 
 const route = useRoute();
 const auth = useAuthStore();
+const chatSocket = useChatSocket();
 
 function readSidebarCollapsed(): boolean {
   const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -26,15 +29,20 @@ function readSidebarCollapsed(): boolean {
 const isSidebarCollapsed = ref(false);
 
 const showChatterNav = computed(() => auth.user?.role === "CHATTER");
-const showMonitorNav = computed(
+const showLeadNav = computed(
   () => auth.user?.role === "TEAMLEAD" || auth.user?.role === "ADMIN",
 );
+const showAdminUsersNav = computed(() => auth.user?.role === "ADMIN");
 
 const isChatterPage = computed(() => route.path === "/chatter");
 const pageTitle = computed(() => getCurrentPageTitle(route.path));
 
 const sidebarToggleLabel = computed(() =>
   isSidebarCollapsed.value ? "Expand sidebar" : "Collapse sidebar",
+);
+
+const connectionPillClass = computed(() =>
+  `status-pill--${getConnectionTone(chatSocket.connectionState.value, Boolean(chatSocket.lastError.value))}`,
 );
 
 function toggleSidebar(): void {
@@ -83,7 +91,7 @@ onMounted(() => {
           <span class="sidebar-nav__label">Chatter Workspace</span>
         </RouterLink>
 
-        <template v-if="showMonitorNav">
+        <template v-if="showLeadNav">
           <RouterLink
             to="/teamlead"
             class="sidebar-nav__link"
@@ -103,6 +111,17 @@ onMounted(() => {
             <AppIcon name="dialogs" size="md" class="sidebar-nav__icon" />
             <span class="sidebar-nav__label">Dialogs</span>
           </RouterLink>
+
+          <RouterLink
+            v-if="showAdminUsersNav"
+            to="/admin/users"
+            class="sidebar-nav__link"
+            :class="{ 'sidebar-nav__link--active': route.path === '/admin/users' }"
+            :title="isSidebarCollapsed ? 'Users' : undefined"
+          >
+            <AppIcon name="users" size="md" class="sidebar-nav__icon" />
+            <span class="sidebar-nav__label">Users</span>
+          </RouterLink>
         </template>
       </nav>
 
@@ -113,7 +132,13 @@ onMounted(() => {
 
     <div class="app-shell__main">
       <header class="app-topbar">
-        <h1 class="app-topbar__title">{{ pageTitle }}</h1>
+        <div class="app-topbar__start">
+          <h1 class="app-topbar__title">{{ pageTitle }}</h1>
+          <span v-if="isChatterPage" class="status-pill" :class="connectionPillClass">
+            <span class="status-dot" aria-hidden="true" />
+            {{ getRealtimeConnectionLabel(chatSocket.connectionState.value) }}
+          </span>
+        </div>
         <div class="app-topbar__actions">
           <UserMenu />
         </div>
@@ -327,6 +352,13 @@ onMounted(() => {
   padding: 0 var(--space-5);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.app-topbar__start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .app-topbar__title {

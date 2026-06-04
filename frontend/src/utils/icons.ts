@@ -20,6 +20,8 @@ export const ICON_NAMES = [
   "inbox-empty",
   "dashboard-empty",
   "users-empty",
+  "users",
+  "close",
   "info",
 ] as const;
 

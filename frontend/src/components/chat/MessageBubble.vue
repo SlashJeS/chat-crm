@@ -24,7 +24,6 @@ function senderLabel(message: Message): string {
       'message-bubble--fan': message.sender_type === 'FAN',
       'message-bubble--chatter': message.sender_type === 'CHATTER',
       'message-bubble--system': message.sender_type === 'SYSTEM',
-      'message-bubble--ppv': message.message_type === 'PPV',
       'message-bubble--pending': message.local_status === 'pending',
       'message-bubble--failed': message.local_status === 'failed',
     }"
@@ -33,10 +32,6 @@ function senderLabel(message: Message): string {
       <span class="message-bubble__sender">{{ senderLabel(message) }}</span>
       <span class="message-bubble__time" :title="formatDateTime(message.created_at)">
         {{ formatRelativeTime(message.created_at) }}
-      </span>
-      <span v-if="message.message_type === 'PPV'" class="message-bubble__ppv-chip">
-        <span class="message-bubble__ppv-label">PPV</span>
-        <span class="message-bubble__ppv-price">${{ message.ppv_price }}</span>
       </span>
       <span v-if="message.local_status === 'pending'" class="message-bubble__status">
         Sending…
@@ -85,10 +80,6 @@ function senderLabel(message: Message): string {
   color: var(--color-text-muted);
 }
 
-.message-bubble--ppv {
-  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-border));
-}
-
 .message-bubble--pending {
   opacity: 0.7;
 }
@@ -112,27 +103,6 @@ function senderLabel(message: Message): string {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--color-text-muted);
-}
-
-.message-bubble__ppv-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 0.05rem 0.35rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-primary-soft);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
-  font-size: 0.625rem;
-}
-
-.message-bubble__ppv-label {
-  font-weight: 600;
-  color: var(--color-primary);
-}
-
-.message-bubble__ppv-price {
-  font-weight: 600;
   color: var(--color-text-muted);
 }
 

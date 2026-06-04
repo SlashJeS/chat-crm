@@ -7,6 +7,7 @@ from apps.conversations.views import SimulateFanMessageView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("apps.accounts.urls")),
+    path("api/admin/", include("apps.accounts.admin_urls")),
     path("api/conversations/", include("apps.conversations.urls")),
     path("api/lead/", include("apps.conversations.lead_urls")),
     path("api/monitor/", include("apps.monitoring.urls")),

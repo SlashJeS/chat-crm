@@ -8,8 +8,11 @@ const props = withDefaults(
     count: number;
     label?: string;
     tone?: StatusTone;
+    showDot?: boolean;
   }>(),
-  {},
+  {
+    showDot: undefined,
+  },
 );
 
 const displayLabel = computed(() => {
@@ -29,7 +32,15 @@ const effectiveTone = computed((): StatusTone => {
   return props.count > 0 ? "danger" : "muted";
 });
 
-const showDot = computed(() => effectiveTone.value === "danger" || effectiveTone.value === "warning");
+const showDotResolved = computed(() => {
+  if (props.showDot !== undefined) {
+    return props.showDot;
+  }
+  return (
+    props.count > 0 &&
+    (effectiveTone.value === "danger" || effectiveTone.value === "warning")
+  );
+});
 </script>
 
 <template>
@@ -38,7 +49,7 @@ const showDot = computed(() => effectiveTone.value === "danger" || effectiveTone
     :class="`overdue-badge--${effectiveTone}`"
   >
     <span
-      v-if="showDot"
+      v-if="showDotResolved"
       class="status-dot"
       :class="{
         'status-dot--danger': effectiveTone === 'danger',
@@ -54,30 +65,36 @@ const showDot = computed(() => effectiveTone.value === "danger" || effectiveTone
 .overdue-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.6875rem;
+  min-height: 1.5rem;
+  min-width: 2.5rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.01em;
+  white-space: nowrap;
   border: 1px solid transparent;
 }
 
 .overdue-badge--danger {
   background: var(--color-danger-soft);
   color: var(--color-danger);
-  border-color: color-mix(in srgb, var(--color-danger) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
 }
 
 .overdue-badge--warning {
   background: var(--color-warning-soft);
   color: var(--color-warning);
-  border-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 18%, transparent);
 }
 
 .overdue-badge--success {
   background: var(--color-success-soft);
   color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 18%, transparent);
 }
 
 .overdue-badge--muted {

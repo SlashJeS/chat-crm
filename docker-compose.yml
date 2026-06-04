@@ -1,60 +1,118 @@
 services:
+
   postgres:
+
     image: postgres:16
+
     container_name: crm_postgres
+
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-crm}
-      POSTGRES_USER: ${POSTGRES_USER:-crm}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm}
+
+      POSTGRES_DB: ${POSTGRES_DB}
+
+      POSTGRES_USER: ${POSTGRES_USER}
+
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
     ports:
+
       - "5432:5432"
+
     volumes:
+
       - postgres_data:/var/lib/postgresql/data
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm} -d ${POSTGRES_DB:-crm}"]
+
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+
       interval: 5s
+
       timeout: 5s
+
       retries: 5
+
+
 
   redis:
+
     image: redis:7
+
     container_name: crm_redis
+
     ports:
+
       - "6379:6379"
+
     healthcheck:
+
       test: ["CMD", "redis-cli", "ping"]
+
       interval: 5s
+
       timeout: 5s
+
       retries: 5
 
+
+
   backend:
+
     container_name: crm_backend
+
     build: ./backend
+
     env_file:
+
       - .env
+
     ports:
+
       - "8000:8000"
+
     volumes:
+
       - ./backend:/app
+
     depends_on:
+
       postgres:
+
         condition: service_healthy
+
       redis:
+
         condition: service_healthy
+
+
 
   frontend:
+
     container_name: crm_frontend
+
     build: ./frontend
+
+    env_file:
+
+      - .env
+
     ports:
+
       - "5173:5173"
+
     volumes:
+
       - ./frontend:/app
+
       - /app/node_modules
-    environment:
-      VITE_API_BASE_URL: http://localhost:8000/api
-      VITE_WS_BASE_URL: ws://localhost:8000
+
     depends_on:
+
       - backend
 
+
+
 volumes:
+
   postgres_data:
+

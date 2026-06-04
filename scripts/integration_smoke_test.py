@@ -4,19 +4,32 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import uuid
+from pathlib import Path
 from typing import Any
 
 import requests
+from dotenv import load_dotenv
 
 try:
     import websocket
 except ImportError:
     websocket = None
 
-BASE = "http://localhost:8000/api"
-WS_BASE = "ws://localhost:8000"
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+
+def require_env(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None or not str(value).strip():
+        raise SystemExit(f"Missing required environment variable: {name}")
+    return str(value).strip()
+
+
+BASE = require_env("VITE_API_BASE_URL")
+WS_BASE = require_env("VITE_WS_BASE_URL")
 
 passed = 0
 failed = 0
